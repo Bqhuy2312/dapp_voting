@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-0db015f4066b92f7f7ae09f5e495fadd916643e9",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/Voting.sol": "project/contracts/Voting.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Voting.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.17;\r\n\r\ncontract Voting{\r\n\r\n    struct Candidate {\r\n        string name;\r\n        uint voteCount;\r\n    }\r\n\r\n    struct Election {\r\n        address creator;\r\n        uint startTime;\r\n        uint endTime;\r\n        bool ended;\r\n        Candidate[] candidates;\r\n        mapping(address => bool) hasVoted;\r\n    }\r\n\r\n    uint public electionCount;\r\n    mapping(uint => Election) public elections;\r\n\r\n    // EVENTS\r\n    event ElectionCreated(uint electionId, address creator);\r\n    event CandidateAdded(uint electionId, string name);\r\n    event Voted(uint electionId, address voter, uint candidateIndex);\r\n    event ElectionEnded(uint electionId);\r\n\r\n    // CREATE ELECTION (AI CŨNG TẠO ĐƯỢC)\r\n    function createElection(\r\n        uint _startTime,\r\n        uint _endTime\r\n    ) external {\r\n        require(_endTime > _startTime, \"Invalid time\");\r\n\r\n        electionCount++;\r\n\r\n        Election storage e = elections[electionCount];\r\n        e.creator = msg.sender;\r\n        e.startTime = _startTime;\r\n        e.endTime = _endTime;\r\n\r\n        emit ElectionCreated(electionCount, msg.sender);\r\n    }\r\n\r\n    // ADD CANDIDATE\r\n    function addCandidate(uint electionId, string calldata name) external {\r\n        Election storage e = elections[electionId];\r\n\r\n        require(msg.sender == e.creator, \"Not creator\");\r\n\r\n        e.candidates.push(Candidate(name, 0));\r\n\r\n        emit CandidateAdded(electionId, name);\r\n    }\r\n\r\n    // VOTE\r\n    function vote(uint electionId, uint candidateIndex) external {\r\n        Election storage e = elections[electionId];\r\n\r\n        require(block.timestamp >= e.startTime, \"Not started\");\r\n        require(block.timestamp <= e.endTime, \"Ended\");\r\n        require(!e.hasVoted[msg.sender], \"Already voted\");\r\n        require(candidateIndex < e.candidates.length, \"Invalid candidate\");\r\n\r\n        e.candidates[candidateIndex].voteCount++;\r\n        e.hasVoted[msg.sender] = true;\r\n\r\n        emit Voted(electionId, msg.sender, candidateIndex);\r\n    }\r\n\r\n    // END EARLY\r\n    function endElection(uint electionId) external {\r\n        Election storage e = elections[electionId];\r\n\r\n        require(msg.sender == e.creator, \"Not creator\");\r\n\r\n        e.endTime = block.timestamp;\r\n        e.ended = true;\r\n\r\n        emit ElectionEnded(electionId);\r\n    }\r\n\r\n    // GET CANDIDATES\r\n    function getCandidates(uint electionId)\r\n        external\r\n        view\r\n        returns (Candidate[] memory)\r\n    {\r\n        return elections[electionId].candidates;\r\n    }\r\n}"
+      }
+    }
+  }
+}
