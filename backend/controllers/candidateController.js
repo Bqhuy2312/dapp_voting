@@ -1,9 +1,22 @@
 const db = require("../config/db");
 
 exports.addCandidate = (req, res) => {
-  const { electionId, name, image, wallet, contractCandidateIndex } = req.body;
+  const {
+    electionId,
+    name,
+    image,
+    wallet,
+    contractCandidateIndex,
+    birthDate,
+    birth_date,
+    hometown,
+    description,
+  } = req.body;
   const normalizedWallet = String(wallet || "").trim().toLowerCase();
   const normalizedContractCandidateIndex = Number(contractCandidateIndex);
+  const normalizedBirthDate = String(birthDate ?? birth_date ?? "").trim() || null;
+  const normalizedHometown = String(hometown || "").trim();
+  const normalizedDescription = String(description || "").trim();
 
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
@@ -31,15 +44,35 @@ exports.addCandidate = (req, res) => {
     }
 
     const sql = `
-      INSERT INTO candidates (election_id, name, image, contract_candidate_index)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO candidates (
+        election_id,
+        name,
+        image,
+        contract_candidate_index,
+        birth_date,
+        hometown,
+        description
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sql, [electionId, name.trim(), image, normalizedContractCandidateIndex], (err, result) => {
-      if (err) return res.status(500).json(err);
+    db.query(
+      sql,
+      [
+        electionId,
+        name.trim(),
+        image,
+        normalizedContractCandidateIndex,
+        normalizedBirthDate,
+        normalizedHometown,
+        normalizedDescription,
+      ],
+      (err, result) => {
+        if (err) return res.status(500).json(err);
 
-      res.json({ success: true, id: result.insertId });
-    });
+        res.json({ success: true, id: result.insertId });
+      },
+    );
   });
 };
 
@@ -64,7 +97,7 @@ exports.getCandidates = (req, res) => {
 
 exports.updateCandidate = (req, res) => {
   const { id } = req.params;
-  const { name, image, wallet } = req.body;
+  const { name, image, wallet, birthDate, birth_date, hometown, description } = req.body;
   const normalizedWallet = String(wallet || "").trim().toLowerCase();
 
   if (!normalizedWallet) {
@@ -93,10 +126,17 @@ exports.updateCandidate = (req, res) => {
 
     const nextName = String(name ?? candidate.name).trim();
     const nextImage = image ?? candidate.image;
+    const nextBirthDate = String(birthDate ?? birth_date ?? candidate.birth_date ?? "").trim() || null;
+    const nextHometown = String(hometown ?? candidate.hometown ?? "").trim();
+    const nextDescription = String(description ?? candidate.description ?? "").trim();
 
     db.query(
-      "UPDATE candidates SET name = ?, image = ? WHERE id = ?",
-      [nextName, nextImage, id],
+      `
+        UPDATE candidates
+        SET name = ?, image = ?, birth_date = ?, hometown = ?, description = ?
+        WHERE id = ?
+      `,
+      [nextName, nextImage, nextBirthDate, nextHometown, nextDescription, id],
       (updateErr) => {
         if (updateErr) return res.status(500).json(updateErr);
 

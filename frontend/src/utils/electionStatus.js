@@ -1,4 +1,4 @@
-export function getElectionStatus(startTime, endTime, now = Date.now()) {
+﻿export function getElectionStatus(startTime, endTime, now = Date.now()) {
   const startTimestamp = Number(startTime);
   const endTimestamp = Number(endTime);
 
@@ -8,8 +8,8 @@ export function getElectionStatus(startTime, endTime, now = Date.now()) {
       isEnded: false,
       isUpcoming: false,
       isActive: false,
-      label: "Khong ro thoi gian",
-      countdown: "Chua co thoi gian ket thuc",
+      label: "Không rõ thời gian",
+      countdown: "Chưa có thời gian kết thúc",
     };
   }
 
@@ -23,22 +23,22 @@ export function getElectionStatus(startTime, endTime, now = Date.now()) {
     const parts = [];
 
     if (days > 0) {
-      parts.push(`${days} ngay`);
+      parts.push(`${days} ngày`);
     }
 
     if (hours > 0 || days > 0) {
-      parts.push(`${hours} gio`);
+      parts.push(`${hours} giờ`);
     }
 
-    parts.push(`${minutes} phut`);
-    parts.push(`${seconds} giay`);
+    parts.push(`${minutes} phút`);
+    parts.push(`${seconds} giây`);
 
     return {
       phase: "upcoming",
       isEnded: false,
       isUpcoming: true,
       isActive: false,
-      label: "Sap dien ra",
+      label: "Sắp diễn ra",
       countdown: parts.join(" "),
     };
   }
@@ -51,8 +51,8 @@ export function getElectionStatus(startTime, endTime, now = Date.now()) {
       isEnded: true,
       isUpcoming: false,
       isActive: false,
-      label: "Da ket thuc",
-      countdown: "Da het thoi gian",
+      label: "Đã kết thúc",
+      countdown: "Đã hết thời gian",
     };
   }
 
@@ -61,26 +61,25 @@ export function getElectionStatus(startTime, endTime, now = Date.now()) {
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-
   const parts = [];
 
   if (days > 0) {
-    parts.push(`${days} ngay`);
+    parts.push(`${days} ngày`);
   }
 
   if (hours > 0 || days > 0) {
-    parts.push(`${hours} gio`);
+    parts.push(`${hours} giờ`);
   }
 
-  parts.push(`${minutes} phut`);
-  parts.push(`${seconds} giay`);
+  parts.push(`${minutes} phút`);
+  parts.push(`${seconds} giây`);
 
   return {
     phase: "active",
     isEnded: false,
     isUpcoming: false,
     isActive: true,
-    label: "Dang dien ra",
+    label: "Đang diễn ra",
     countdown: parts.join(" "),
   };
 }

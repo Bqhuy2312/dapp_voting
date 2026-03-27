@@ -1,12 +1,11 @@
-.vote-container {
+﻿.vote-container {
   min-height: 100vh;
-  background: #f3f4f6;
-  padding: 24px 16px;
+  padding: 36px 16px 56px;
 }
 
 .vote-shell {
   width: 100%;
-  max-width: 980px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
@@ -14,162 +13,213 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
 .page-label {
-  margin: 0 0 8px;
-  color: #0f766e;
-  font-size: 14px;
-  font-weight: 700;
+  margin: 0 0 10px;
+  color: rgba(18, 60, 105, 0.72);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
 }
 
 .vote-title {
   margin: 0;
-  font-size: 30px;
-  font-weight: 700;
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--primary-strong);
 }
 
-.back-home {
+.back-home,
+.manage-link,
+.verify-btn,
+.owner-btn,
+.history-btn,
+.vote-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
-  color: #1d4ed8;
-  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.back-home,
+.manage-link {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(18, 60, 105, 0.14);
 }
 
 .wallet {
-  margin-bottom: 16px;
-  color: #475569;
+  margin: 0 0 18px;
+  color: var(--text-soft);
   word-break: break-all;
+}
+
+.election-status-box,
+.verify-box,
+.owner-card,
+.history-card,
+.candidate-card,
+.election-info-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.8));
+  border: 1px solid rgba(255,255,255,0.72);
+  border-radius: 26px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
 }
 
 .election-status-box {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  background: white;
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  gap: 12px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.election-hero-image {
+  width: 100%;
+  height: min(34vw, 320px);
+  min-height: 200px;
+  object-fit: cover;
+  border-radius: 30px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-lg);
+  display: block;
+  border: 1px solid rgba(18, 60, 105, 0.08);
 }
 
 .status-badge {
-  padding: 4px 10px;
+  padding: 8px 13px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
 
 .status-active {
-  background: #dcfce7;
-  color: #15803d;
+  background: rgba(31, 157, 139, 0.16);
+  color: var(--accent-strong);
 }
 
 .status-upcoming {
-  background: #fef3c7;
-  color: #b45309;
+  background: rgba(217, 164, 65, 0.18);
+  color: #9b6a14;
 }
 
 .status-ended {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: rgba(201, 79, 79, 0.16);
+  color: #9d2f2f;
 }
 
 .status-countdown {
   margin: 0;
-  color: #475569;
-  font-weight: 500;
+  color: var(--text-soft);
+  font-weight: 700;
 }
 
+.election-info-card,
 .verify-box,
 .owner-card,
 .history-card,
 .candidate-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 22px;
+}
+
+.election-info-card {
+  margin-bottom: 22px;
+}
+
+.election-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 18px;
+  margin-bottom: 14px;
+}
+
+.election-info-grid p,
+.election-description {
+  margin: 0;
+  color: var(--text-soft);
+  word-break: break-word;
+}
+
+.election-description {
+  line-height: 1.7;
 }
 
 .verify-box {
-  padding: 18px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .verify-title,
 .section-title {
-  margin: 0 0 14px;
-  font-size: 18px;
-  font-weight: 700;
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-strong);
 }
 
 .verify-row,
 .owner-actions,
 .candidate-form {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.input {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  font: inherit;
+.input,
+.file-field {
+  padding: 13px 15px;
+  border-radius: 16px;
+  border: 1px solid rgba(18, 60, 105, 0.14);
+  background: rgba(247, 250, 253, 0.95);
+  color: var(--text);
 }
 
 .full-width {
   width: 100%;
 }
 
-.file-field {
-  background: #f8fafc;
-}
-
-.verify-btn,
-.owner-btn,
-.history-btn,
-.vote-btn {
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .verify-btn,
 .owner-btn {
-  background: #2563eb;
-  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, #1b5f99 100%);
+  color: white;
 }
 
 .history-btn {
-  background: #0f766e;
-  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: white;
 }
 
 .owner-tools {
   display: grid;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.owner-card,
-.history-card {
-  padding: 18px;
+  gap: 18px;
+  margin-bottom: 28px;
 }
 
 .history-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .history-item {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
-  background: #f8fafc;
+  border: 1px solid rgba(18, 60, 105, 0.08);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: var(--surface-muted);
 }
 
 .history-voter,
@@ -180,73 +230,96 @@
 }
 
 .history-voter {
-  font-weight: 600;
+  font-weight: 800;
+  color: var(--primary-strong);
   word-break: break-all;
 }
 
 .history-choice,
 .candidate-meta,
-.empty-state {
-  margin-top: 6px;
-  color: #64748b;
+.empty-state,
+.candidate-detail {
+  margin-top: 7px;
+  color: var(--text-soft);
 }
 
 .candidate-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 18px;
 }
 
 .candidate-card {
-  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.candidate-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--accent), var(--primary));
 }
 
 .candidate-image {
   width: 100%;
-  height: 160px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 14px;
+  height: 180px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  display: block;
+  border: 1px solid rgba(18, 60, 105, 0.08);
+  background:
+    radial-gradient(circle at top, rgba(31, 157, 139, 0.08), transparent 42%),
+    linear-gradient(135deg, #eef4fb, #f9fbff);
+  padding: 10px;
 }
 
 .candidate-name {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary-strong);
 }
 
 .progress-bar {
   width: 100%;
-  background: #e2e8f0;
+  background: #e6edf3;
   border-radius: 999px;
   overflow: hidden;
-  margin: 14px 0;
+  margin: 16px 0;
+  min-height: 16px;
 }
 
 .progress-fill {
-  min-width: 52px;
-  background: linear-gradient(90deg, #16a34a, #22c55e);
+  min-width: 56px;
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent));
   color: white;
   text-align: center;
-  padding: 6px 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .vote-btn {
   width: 100%;
-  background: #22c55e;
-  padding: 10px 14px;
+  margin-top: 10px;
+  background: linear-gradient(135deg, var(--warning) 0%, #c98619 100%);
+  color: white;
 }
 
 .vote-btn:disabled,
 .owner-btn:disabled,
-.verify-btn:disabled {
+.verify-btn:disabled,
+.history-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 700px) {
   .page-top {
     flex-direction: column;
   }
@@ -260,7 +333,13 @@
   .input,
   .verify-btn,
   .owner-btn,
-  .history-btn {
+  .history-btn,
+  .manage-link,
+  .back-home {
     width: 100%;
+  }
+
+  .election-hero-image {
+    height: 220px;
   }
 }

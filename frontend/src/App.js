@@ -7,12 +7,21 @@ import CreateElection from "./pages/CreateElection";
 import ElectionManage from "./pages/ElectionManage";
 import { getConnectedWallet } from "./services/blockchain";
 
+const WALLET_SESSION_KEY = "walletDisconnected";
+
 function App() {
   const [wallet, setWallet] = useState("");
 
   useEffect(() => {
     const syncWallet = async () => {
       try {
+        const isDisconnected = localStorage.getItem(WALLET_SESSION_KEY) === "true";
+
+        if (isDisconnected) {
+          setWallet("");
+          return;
+        }
+
         const address = await getConnectedWallet();
         setWallet(address);
       } catch (error) {
@@ -27,7 +36,21 @@ function App() {
     }
 
     const handleAccountsChanged = (accounts) => {
-      setWallet(accounts[0] || "");
+      const isDisconnected = localStorage.getItem(WALLET_SESSION_KEY) === "true";
+      const nextWallet = accounts[0] || "";
+
+      if (isDisconnected) {
+        setWallet("");
+        return;
+      }
+
+      setWallet(nextWallet);
+
+      if (nextWallet) {
+        localStorage.removeItem(WALLET_SESSION_KEY);
+      } else {
+        localStorage.setItem(WALLET_SESSION_KEY, "true");
+      }
     };
 
     window.ethereum.on("accountsChanged", handleAccountsChanged);
@@ -37,12 +60,23 @@ function App() {
     };
   }, []);
 
+  const handleDisconnectWallet = () => {
+    localStorage.setItem(WALLET_SESSION_KEY, "true");
+    setWallet("");
+  };
+
   return (
     <BrowserRouter>
       <Routes>
         <Route
           path="/"
-          element={<Home wallet={wallet} setWallet={setWallet} />}
+          element={
+            <Home
+              wallet={wallet}
+              setWallet={setWallet}
+              onDisconnectWallet={handleDisconnectWallet}
+            />
+          }
         />
         <Route path="/vote/:id" element={<VotePage wallet={wallet} />} />
         <Route path="/create" element={<CreateElection wallet={wallet} />} />

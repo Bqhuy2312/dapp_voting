@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const app = express();
 const uploadRoutes = require("./routes/uploadRoutes");
 const electionRoutes = require("./routes/electionRoutes");
@@ -8,6 +9,7 @@ const voteRoutes = require("./routes/voteRoutes");
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
   res.send("API Running");

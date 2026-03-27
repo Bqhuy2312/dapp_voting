@@ -1,38 +1,79 @@
-.App {
-  text-align: center;
+﻿:root {
+  color-scheme: light;
+  --bg: #f4f1e8;
+  --bg-soft: #fbf8f1;
+  --surface: rgba(255, 255, 255, 0.84);
+  --surface-strong: #ffffff;
+  --surface-muted: #f6f8fb;
+  --border: rgba(17, 24, 39, 0.09);
+  --text: #172033;
+  --text-soft: #5f6b84;
+  --primary: #123c69;
+  --primary-strong: #0b2b4a;
+  --accent: #1f9d8b;
+  --accent-strong: #157567;
+  --warning: #d9a441;
+  --danger: #c94f4f;
+  --shadow-lg: 0 24px 60px rgba(18, 34, 55, 0.12);
+  --shadow-md: 0 14px 34px rgba(18, 34, 55, 0.08);
+  --shadow-sm: 0 10px 20px rgba(18, 34, 55, 0.06);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
-.App-header {
-  background-color: #282c34;
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--text);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(31, 157, 139, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(18, 60, 105, 0.15), transparent 30%),
+    linear-gradient(180deg, #fcfaf4 0%, #f3efe4 46%, #ece8dd 100%);
+}
+
+#root {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+button:hover:not(:disabled),
+a:hover {
+  transform: translateY(-1px);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(31, 157, 139, 0.24);
+  outline-offset: 2px;
+}
+
+img {
+  max-width: 100%;
+}
+
+.App {
+  min-height: 100vh;
 }

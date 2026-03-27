@@ -1,187 +1,321 @@
-.container {
-  padding: 20px;
-  background: #f3f4f6;
+﻿.container {
+  position: relative;
   min-height: 100vh;
+  padding: 40px 28px 56px;
+}
+
+.container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(18, 60, 105, 0.06), transparent 36%),
+    radial-gradient(circle at 20% 0%, rgba(31, 157, 139, 0.12), transparent 24%);
+  pointer-events: none;
+}
+
+.header,
+.search-input,
+.filter-row,
+.empty,
+.card-list {
+  position: relative;
+  z-index: 1;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 0 auto 26px;
+  max-width: 1180px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--primary-strong);
+}
+
+.header::before {
+  content: "Bảng điều khiển bỏ phiếu";
+  position: absolute;
+  transform: translateY(-22px);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(18, 60, 105, 0.7);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 12px;
   flex-wrap: wrap;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: bold;
+  max-width: 520px;
 }
 
 .connect-btn,
-.create-btn {
-  background: #3b82f6;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 8px;
+.create-btn,
+.disconnect-btn,
+.manage-btn,
+.vote-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
   text-decoration: none;
-  border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.connect-btn,
+.create-btn,
+.vote-btn {
+  background: linear-gradient(135deg, var(--primary) 0%, #1b5f99 100%);
+  color: white;
 }
 
 .connect-btn:hover,
-.create-btn:hover {
-  background: #2563eb;
+.create-btn:hover,
+.vote-btn:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.disconnect-btn {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--primary-strong);
+  border-color: rgba(18, 60, 105, 0.14);
+}
+
+.manage-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: white;
 }
 
 .wallet-badge {
-  background: #111827;
-  color: white;
-  padding: 8px 14px;
+  background: rgba(11, 43, 74, 0.92);
+  color: #f8fbff;
+  padding: 11px 16px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
 .search-input {
   width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-bottom: 16px;
+  max-width: 1180px;
+  display: block;
+  margin: 0 auto 18px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(18, 60, 105, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sm);
+  font-size: 1rem;
 }
 
 .filter-row {
+  max-width: 1180px;
+  margin: 0 auto 22px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 16px;
 }
 
 .filter-btn {
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #334155;
-  padding: 8px 12px;
+  border: 1px solid rgba(18, 60, 105, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text-soft);
+  padding: 10px 16px;
   border-radius: 999px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .filter-btn-active {
-  background: #2563eb;
+  background: var(--primary-strong);
   color: white;
-  border-color: #2563eb;
+  border-color: var(--primary-strong);
 }
 
 .empty {
+  max-width: 1180px;
+  margin: 30px auto 0;
+  padding: 26px;
   text-align: center;
-  color: gray;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.68);
+  border-radius: 22px;
+  border: 1px dashed rgba(18, 60, 105, 0.14);
 }
 
 .card {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 240px 1fr auto;
+  gap: 22px;
   align-items: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  transition: 0.3s;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 28px 70px rgba(18, 34, 55, 0.14);
+}
+
+.card-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 22px;
+  border: 1px solid rgba(18, 60, 105, 0.08);
+  background: linear-gradient(135deg, #e9eef8, #f8fbff);
 }
 
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.card-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card:hover {
-  transform: translateY(-3px);
+  gap: 12px;
+  min-width: 0;
 }
 
 .card-title {
-  font-weight: 600;
+  margin: 0;
+  font-size: 1.65rem;
+  line-height: 1.1;
+  color: var(--primary-strong);
 }
 
 .owner-badge {
   width: fit-content;
-  background: #dbeafe;
-  color: #1d4ed8;
-  padding: 4px 10px;
+  background: rgba(18, 60, 105, 0.1);
+  color: var(--primary);
+  padding: 6px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .status-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
 .status-badge {
   width: fit-content;
-  padding: 4px 10px;
+  padding: 7px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .status-active {
-  background: #dcfce7;
-  color: #15803d;
+  background: rgba(31, 157, 139, 0.16);
+  color: var(--accent-strong);
 }
 
 .status-badge.status-active.status-upcoming,
 .status-upcoming {
-  background: #fef3c7;
-  color: #b45309;
+  background: rgba(217, 164, 65, 0.18);
+  color: #9b6a14;
 }
 
 .status-ended {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: rgba(201, 79, 79, 0.16);
+  color: #9d2f2f;
 }
 
 .countdown-text {
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--text-soft);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .manage-btn,
 .vote-btn {
-  background: #22c55e;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 8px;
-  text-decoration: none;
+  min-width: 132px;
 }
 
-.manage-btn {
-  background: #0f766e;
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
-.manage-btn:hover {
-  background: #115e59;
-}
+@media (max-width: 640px) {
+  .container {
+    padding: 28px 16px 44px;
+  }
 
-.vote-btn:hover {
-  background: #16a34a;
+  .header::before {
+    position: static;
+    display: block;
+    transform: none;
+    margin-bottom: 10px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .card-image {
+    height: 188px;
+  }
+
+  .card-actions,
+  .connect-btn,
+  .create-btn,
+  .disconnect-btn,
+  .manage-btn,
+  .vote-btn {
+    width: 100%;
+  }
 }

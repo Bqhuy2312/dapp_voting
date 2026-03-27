@@ -1,7 +1,12 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
-import { createElectionOnChain } from "../services/blockchain";
+import {
+  createElectionOnChain,
+  getReadableBlockchainError,
+} from "../services/blockchain";
+import { resolveImageUrlWithFallback } from "../utils/imageUrl";
+import { formatWalletAddress } from "../utils/wallet";
 import "./CreateElection.css";
 
 function CreateElection({ wallet }) {
@@ -15,20 +20,35 @@ function CreateElection({ wallet }) {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
 
   const handleCreate = async () => {
     if (!wallet) {
-      setErrorMessage("Vui long ket noi MetaMask o trang Home truoc khi tao election.");
+      setErrorMessage("Vui lòng kết nối MetaMask ở trang chủ trước khi tạo election.");
       return;
     }
 
     if (!data.title.trim() || !data.accessCode.trim() || !data.endTime) {
-      setErrorMessage("Vui long nhap day du tieu de, ma truy cap va thoi gian ket thuc.");
+      setErrorMessage("Vui lòng nhập đầy đủ tiêu đề, mã truy cập và thời gian kết thúc.");
       return;
     }
 
     if (data.accessCode.trim().length < 3) {
-      setErrorMessage("Ma truy cap phai co it nhat 3 ky tu.");
+      setErrorMessage("Mã truy cập phải có ít nhất 3 ký tự.");
       return;
     }
 
@@ -36,7 +56,7 @@ function CreateElection({ wallet }) {
     const endTime = new Date(data.endTime).getTime();
 
     if (!Number.isFinite(endTime) || endTime <= startTime) {
-      setErrorMessage("Thoi gian ket thuc phai lon hon hien tai.");
+      setErrorMessage("Thời gian kết thúc phải lớn hơn hiện tại.");
       return;
     }
 
@@ -56,7 +76,7 @@ function CreateElection({ wallet }) {
 
       const chainRes = await createElectionOnChain(startTime, endTime);
 
-      const res = await API.post("/elections", {
+      await API.post("/elections", {
         ...data,
         accessCode: String(data.accessCode).trim(),
         image: imageUrl,
@@ -66,11 +86,11 @@ function CreateElection({ wallet }) {
         contractElectionId: chainRes.contractElectionId,
       });
 
-      alert("Tao election thanh cong");
-      navigate(`/manage/${res.data.id}`);
+      alert("Tạo election thành công");
+      navigate("/");
     } catch (err) {
       console.error(err);
-      setErrorMessage("Loi tao election. Vui long kiem tra lai thong tin va MetaMask.");
+      setErrorMessage(`Lỗi tạo election: ${getReadableBlockchainError(err)}`);
     }
 
     setSubmitting(false);
@@ -79,25 +99,25 @@ function CreateElection({ wallet }) {
   return (
     <div className="create-container">
       <div className="create-card">
-        <h2 className="create-title">Tao cuoc vote</h2>
+        <h2 className="create-title">Tạo cuộc vote</h2>
 
-        {wallet ? <p className="wallet-text">Vi tao: {wallet}</p> : null}
+        {wallet ? <p className="wallet-text">Ví tạo: {formatWalletAddress(wallet)}</p> : null}
         {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
 
         <input
-          placeholder="Tieu de"
+          placeholder="Tiêu đề"
           className="input"
           onChange={(e) => setData({ ...data, title: e.target.value })}
         />
 
         <input
-          placeholder="Mo ta"
+          placeholder="Mô tả"
           className="input"
           onChange={(e) => setData({ ...data, description: e.target.value })}
         />
 
         <input
-          placeholder="Ma truy cap"
+          placeholder="Mã truy cập"
           className="input"
           value={data.accessCode}
           onChange={(e) => setData({ ...data, accessCode: e.target.value })}
@@ -107,6 +127,12 @@ function CreateElection({ wallet }) {
           type="file"
           className="file-input"
           onChange={(e) => setFile(e.target.files[0] || null)}
+        />
+
+        <img
+          src={previewUrl || resolveImageUrlWithFallback("", data.title || "Election")}
+          alt={data.title || "Xem trước election"}
+          className="create-image-preview"
         />
 
         <input
@@ -120,7 +146,7 @@ function CreateElection({ wallet }) {
           className="submit-btn"
           disabled={!wallet || submitting}
         >
-          {submitting ? "Dang tao..." : "Tao Vote"}
+          {submitting ? "Đang tạo..." : "Tạo vote"}
         </button>
       </div>
     </div>

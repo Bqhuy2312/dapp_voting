@@ -17,6 +17,18 @@ const ensureSchema = () => {
       ALTER TABLE candidates
       ADD COLUMN IF NOT EXISTS contract_candidate_index BIGINT NULL
     `,
+    `
+      ALTER TABLE candidates
+      ADD COLUMN IF NOT EXISTS birth_date DATE NULL
+    `,
+    `
+      ALTER TABLE candidates
+      ADD COLUMN IF NOT EXISTS hometown VARCHAR(255) NULL
+    `,
+    `
+      ALTER TABLE candidates
+      ADD COLUMN IF NOT EXISTS description TEXT NULL
+    `,
   ];
 
   queries.forEach((query) => {

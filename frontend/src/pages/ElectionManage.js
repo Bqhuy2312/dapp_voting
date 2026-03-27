@@ -1,30 +1,20 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../services/api";
 import {
   addCandidateOnChain,
   deleteCandidateOnChain,
   endElectionOnChain,
+  getReadableBlockchainError,
   updateCandidateOnChain,
 } from "../services/blockchain";
+import {
+  formatCandidateBirthInputValue,
+  formatCandidateBirthLabel,
+} from "../utils/candidateProfile";
 import { getElectionStatus } from "../utils/electionStatus";
+import { resolveImageUrlWithFallback } from "../utils/imageUrl";
 import "./ElectionManage.css";
-
-function formatDateTimeLocal(timestamp) {
-  if (!timestamp) {
-    return "";
-  }
-
-  const date = new Date(Number(timestamp));
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-}
 
 function ElectionManage({ wallet }) {
   const { id } = useParams();
@@ -42,10 +32,19 @@ function ElectionManage({ wallet }) {
     accessCode: "",
   });
   const [file, setFile] = useState(null);
-  const [newCandidate, setNewCandidate] = useState({ name: "", file: null });
+  const [newCandidate, setNewCandidate] = useState({
+    name: "",
+    birthDate: "",
+    hometown: "",
+    description: "",
+    file: null,
+  });
   const [candidateEdits, setCandidateEdits] = useState({});
   const [now, setNow] = useState(Date.now());
   const [message, setMessage] = useState("");
+  const [electionPreviewUrl, setElectionPreviewUrl] = useState("");
+  const [newCandidatePreviewUrl, setNewCandidatePreviewUrl] = useState("");
+  const [candidatePreviewUrls, setCandidatePreviewUrls] = useState({});
 
   const loadElection = async () => {
     const res = await API.get(`/elections/${id}`);
@@ -66,6 +65,9 @@ function ElectionManage({ wallet }) {
     res.data.forEach((candidate) => {
       nextEdits[candidate.id] = {
         name: candidate.name || "",
+        birthDate: formatCandidateBirthInputValue(candidate.birth_date),
+        hometown: candidate.hometown || "",
+        description: candidate.description || "",
         file: null,
       };
     });
@@ -77,7 +79,7 @@ function ElectionManage({ wallet }) {
     Promise.all([loadElection(), loadCandidates()])
       .catch((error) => {
         console.error(error);
-        alert("Khong tai duoc election.");
+        alert("Không tải được election.");
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -86,6 +88,53 @@ function ElectionManage({ wallet }) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!file) {
+      setElectionPreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setElectionPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  useEffect(() => {
+    if (!newCandidate.file) {
+      setNewCandidatePreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(newCandidate.file);
+    setNewCandidatePreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [newCandidate.file]);
+
+  useEffect(() => {
+    const activeUrls = [];
+    const nextPreviewUrls = {};
+
+    Object.entries(candidateEdits).forEach(([candidateId, edit]) => {
+      if (edit?.file) {
+        const objectUrl = URL.createObjectURL(edit.file);
+        nextPreviewUrls[candidateId] = objectUrl;
+        activeUrls.push(objectUrl);
+      }
+    });
+
+    setCandidatePreviewUrls(nextPreviewUrls);
+
+    return () => {
+      activeUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [candidateEdits]);
 
   const isOwner =
     wallet &&
@@ -110,7 +159,7 @@ function ElectionManage({ wallet }) {
 
   const handleUpdate = async () => {
     if (!wallet || !isOwner) {
-      setMessage("Ban khong phai chu election nay.");
+      setMessage("Bạn không phải chủ election này.");
       return;
     }
 
@@ -138,10 +187,10 @@ function ElectionManage({ wallet }) {
       await loadElection();
       setForm((current) => ({ ...current, accessCode: "" }));
       setFile(null);
-      setMessage("Cap nhat election thanh cong.");
+      setMessage("Cập nhật election thành công.");
     } catch (error) {
       console.error(error);
-      setMessage("Cap nhat election that bai.");
+      setMessage("Cập nhật election thất bại.");
     }
 
     setSaving(false);
@@ -149,12 +198,12 @@ function ElectionManage({ wallet }) {
 
   const handleDelete = async () => {
     if (!wallet || !isOwner) {
-      setMessage("Ban khong phai chu election nay.");
+      setMessage("Bạn không phải chủ election này.");
       return;
     }
 
     const confirmed = window.confirm(
-      "Ban chac chan muon xoa election nay? Hanh dong nay khong the hoan tac.",
+      "Bạn chắc chắn muốn xóa election này? Hành động này không thể hoàn tác.",
     );
 
     if (!confirmed) {
@@ -165,23 +214,23 @@ function ElectionManage({ wallet }) {
 
     try {
       await API.delete(`/elections/${id}`, { params: { wallet } });
-      alert("Da xoa election.");
+      alert("Đã xóa election.");
       navigate("/");
     } catch (error) {
       console.error(error);
-      alert("Xoa election that bai.");
+      alert("Xóa election thất bại.");
       setDeleting(false);
     }
   };
 
   const handleEndElection = async () => {
     if (!wallet || !isOwner) {
-      setMessage("Ban khong phai chu election nay.");
+      setMessage("Bạn không phải chủ election này.");
       return;
     }
 
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      setMessage("Election nay chua duoc dong bo blockchain.");
+      setMessage("Election này chưa được đồng bộ blockchain.");
       return;
     }
 
@@ -191,10 +240,10 @@ function ElectionManage({ wallet }) {
       await endElectionOnChain(Number(election.contract_election_id));
       await API.post(`/elections/${id}/end`, { wallet });
       await loadElection();
-      setMessage("Da ket thuc som election.");
+      setMessage("Đã kết thúc sớm election.");
     } catch (error) {
       console.error(error);
-      setMessage("Khong the ket thuc election.");
+      setMessage("Không thể kết thúc election.");
     }
 
     setEnding(false);
@@ -202,27 +251,27 @@ function ElectionManage({ wallet }) {
 
   const handleAddCandidate = async () => {
     if (!wallet || !isOwner) {
-      setMessage("Ban khong phai chu election nay.");
+      setMessage("Bạn không phải chủ election này.");
       return;
     }
 
     if (!newCandidate.name.trim()) {
-      setMessage("Vui long nhap ten ung vien.");
+      setMessage("Vui lòng nhập tên ứng viên.");
       return;
     }
 
     if (status?.isEnded) {
-      setMessage("Election da ket thuc.");
+      setMessage("Election đã kết thúc.");
       return;
     }
 
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      setMessage("Election nay chua duoc dong bo blockchain.");
+      setMessage("Election này chưa được đồng bộ blockchain.");
       return;
     }
 
     if (newCandidate.name.trim().length < 2) {
-      setMessage("Ten ung vien phai co it nhat 2 ky tu.");
+      setMessage("Tên ứng viên phải có ít nhất 2 ký tự.");
       return;
     }
 
@@ -250,14 +299,24 @@ function ElectionManage({ wallet }) {
         image: imageUrl,
         wallet,
         contractCandidateIndex: chainRes.contractCandidateIndex,
+        birthDate: newCandidate.birthDate,
+        birth_date: newCandidate.birthDate,
+        hometown: newCandidate.hometown,
+        description: newCandidate.description,
       });
 
-      setNewCandidate({ name: "", file: null });
+      setNewCandidate({
+        name: "",
+        birthDate: "",
+        hometown: "",
+        description: "",
+        file: null,
+      });
       await loadCandidates();
-      setMessage("Them ung vien thanh cong.");
+      setMessage("Thêm ứng viên thành công.");
     } catch (error) {
       console.error(error);
-      setMessage("Them ung vien that bai.");
+      setMessage("Thêm ứng viên thất bại.");
     }
 
     setCandidateSubmitting(false);
@@ -270,8 +329,30 @@ function ElectionManage({ wallet }) {
       return;
     }
 
+    if (!wallet || !isOwner) {
+      setMessage("Bạn không có quyền cập nhật ứng viên này.");
+      return;
+    }
+
     if (!edit.name.trim()) {
-      setMessage("Ten ung vien khong duoc de trong.");
+      setMessage("Tên ứng viên không được để trống.");
+      return;
+    }
+
+    const trimmedName = edit.name.trim();
+    const currentBirthDate = formatCandidateBirthInputValue(candidate.birth_date);
+    const nextBirthDate = String(edit.birthDate || "").trim();
+    const nextHometown = String(edit.hometown || "").trim();
+    const nextDescription = String(edit.description || "").trim();
+    const hasNameChanged = trimmedName !== String(candidate.name || "").trim();
+    const hasProfileChanged =
+      nextBirthDate !== currentBirthDate ||
+      nextHometown !== String(candidate.hometown || "").trim() ||
+      nextDescription !== String(candidate.description || "").trim() ||
+      Boolean(edit.file);
+
+    if (!hasNameChanged && !hasProfileChanged) {
+      setMessage("Chưa có thay đổi nào để cập nhật.");
       return;
     }
 
@@ -279,6 +360,7 @@ function ElectionManage({ wallet }) {
 
     try {
       let imageUrl = candidate.image || "";
+      let blockchainNameWarning = "";
 
       if (edit.file) {
         const formData = new FormData();
@@ -289,35 +371,51 @@ function ElectionManage({ wallet }) {
       }
 
       if (
-        edit.name.trim() !== candidate.name &&
+        hasNameChanged &&
         Number.isFinite(Number(candidate.contract_candidate_index)) &&
         Number.isFinite(Number(election?.contract_election_id))
       ) {
-        await updateCandidateOnChain(
-          Number(election.contract_election_id),
-          Number(candidate.contract_candidate_index),
-          edit.name.trim(),
-        );
+        try {
+          await updateCandidateOnChain(
+            Number(election.contract_election_id),
+            Number(candidate.contract_candidate_index),
+            trimmedName,
+          );
+        } catch (chainError) {
+          blockchainNameWarning = getReadableBlockchainError(chainError);
+        }
       }
 
       await API.put(`/candidates/${candidate.id}`, {
-        name: edit.name.trim(),
+        name: trimmedName,
         image: imageUrl,
         wallet,
+        birthDate: nextBirthDate,
+        birth_date: nextBirthDate,
+        hometown: nextHometown,
+        description: nextDescription,
       });
 
       await loadCandidates();
-      setMessage("Cap nhat ung vien thanh cong.");
+      setMessage(
+        blockchainNameWarning
+          ? `Đã cập nhật ứng viên trong hệ thống, nhưng tên trên blockchain chưa đổi: ${blockchainNameWarning}`
+          : "Cập nhật ứng viên thành công.",
+      );
     } catch (error) {
       console.error(error);
-      setMessage("Cap nhat ung vien that bai.");
+      setMessage(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Cập nhật ứng viên thất bại.",
+      );
     }
 
     setCandidateSubmitting(false);
   };
 
   const handleDeleteCandidate = async (candidate) => {
-    const confirmed = window.confirm("Ban chac chan muon xoa ung vien nay?");
+    const confirmed = window.confirm("Bạn chắc chắn muốn xóa ứng viên này?");
 
     if (!confirmed) {
       return;
@@ -341,21 +439,21 @@ function ElectionManage({ wallet }) {
       });
 
       await loadCandidates();
-      setMessage("Da xoa ung vien.");
+      setMessage("Đã xóa ứng viên.");
     } catch (error) {
       console.error(error);
-      setMessage("Xoa ung vien that bai.");
+      setMessage("Xóa ứng viên thất bại.");
     }
 
     setCandidateSubmitting(false);
   };
 
   if (loading) {
-    return <div className="manage-page">Dang tai election...</div>;
+    return <div className="manage-page">Đang tải election...</div>;
   }
 
   if (!election) {
-    return <div className="manage-page">Khong tim thay election.</div>;
+    return <div className="manage-page">Không tìm thấy election.</div>;
   }
 
   return (
@@ -363,151 +461,215 @@ function ElectionManage({ wallet }) {
       <div className="manage-card">
         <div className="manage-header">
           <div>
-            <p className="manage-label">Trang quan ly election</p>
+            <p className="manage-label">Trang quản lý election</p>
             <h2 className="manage-title">{election.title}</h2>
           </div>
           <Link to="/" className="back-link">
-            Ve Home
+            Về trang chủ
           </Link>
         </div>
 
         <div className="owner-panel">
           {message ? <p className="status-message">{message}</p> : null}
-          <p><strong>ID:</strong> {election.id}</p>
-          <p><strong>Creator:</strong> {election.creator}</p>
-          <p><strong>Contract Election ID:</strong> {election.contract_election_id ?? "Chua dong bo"}</p>
-          <p><strong>Trang thai:</strong> {status?.label || "Khong ro"}</p>
-          <p><strong>Con lai:</strong> {status?.countdown || "Khong ro"}</p>
+          <p><strong>Trạng thái:</strong> {status?.label || "Không rõ"}</p>
+          <p><strong>Còn lại:</strong> {status?.countdown || "Không rõ"}</p>
+          {election.description ? <p><strong>Mô tả:</strong> {election.description}</p> : null}
         </div>
 
         {!isOwner ? (
           <div className="blocked-box">
-            Election nay khong thuoc vi hien tai. Hay doi dung MetaMask account cua creator de quan ly.
+            Bạn đang xem election ở chế độ chỉ đọc. Chỉ creator mới có thể chỉnh sửa và quản lý election này.
           </div>
-        ) : (
-          <>
-            <div className="form-grid">
-              <label className="field">
-                <span>Tieu de</span>
-                <input
-                  className="manage-input"
-                  value={form.title}
-                  onChange={handleChange("title")}
-                />
-              </label>
+        ) : null}
 
-              <label className="field">
-                <span>Mo ta</span>
-                <textarea
-                  className="manage-textarea"
-                  value={form.description}
-                  onChange={handleChange("description")}
-                />
-              </label>
+        {isOwner ? (
+          <div className="form-grid">
+            <label className="field">
+              <span>Tiêu đề</span>
+              <input
+                className="manage-input"
+                value={form.title}
+                onChange={handleChange("title")}
+              />
+            </label>
 
-              <label className="field">
-                <span>Ma truy cap moi</span>
-                <input
-                  className="manage-input"
-                  placeholder="Bo trong neu giu nguyen"
-                  value={form.accessCode}
-                  onChange={handleChange("accessCode")}
-                />
-              </label>
+            <label className="field">
+              <span>Mô tả</span>
+              <textarea
+                className="manage-textarea"
+                value={form.description}
+                onChange={handleChange("description")}
+              />
+            </label>
 
-              <label className="field">
-                <span>Hinh anh moi</span>
-                <input
-                  type="file"
-                  className="manage-input"
-                  onChange={(e) => setFile(e.target.files[0] || null)}
-                />
-              </label>
-            </div>
+            <label className="field">
+              <span>Mã truy cập mới</span>
+              <input
+                className="manage-input"
+                placeholder="Bỏ trống nếu giữ nguyên"
+                value={form.accessCode}
+                onChange={handleChange("accessCode")}
+              />
+            </label>
 
-            {election.image ? (
-              <img src={election.image} alt={election.title} className="preview-image" />
-            ) : null}
+            <label className="field">
+              <span>Hình ảnh mới</span>
+              <input
+                type="file"
+                className="manage-input"
+                onChange={(e) => setFile(e.target.files[0] || null)}
+              />
+            </label>
+          </div>
+        ) : null}
 
-            <div className="manage-actions">
+        <img
+          src={
+            electionPreviewUrl ||
+            resolveImageUrlWithFallback(election.image, election.title)
+          }
+          alt={election.title}
+          className="preview-image"
+        />
+
+        {isOwner ? (
+          <div className="manage-actions">
+            <button
+              className="save-btn"
+              onClick={handleUpdate}
+              disabled={saving || deleting || ending}
+            >
+              {saving ? "Đang lưu..." : "Cập nhật election"}
+            </button>
+
+            <button
+              className="end-btn"
+              onClick={handleEndElection}
+              disabled={saving || deleting || ending || status?.isEnded}
+            >
+              {ending ? "Đang kết thúc..." : "Kết thúc sớm election"}
+            </button>
+
+            <Link to={`/vote/${election.id}`} className="secondary-link">
+              Mở trang vote
+            </Link>
+
+            <button
+              className="delete-btn"
+              onClick={handleDelete}
+              disabled={saving || deleting || ending}
+            >
+              {deleting ? "Đang xóa..." : "Xóa election"}
+            </button>
+          </div>
+        ) : null}
+
+        <div className="candidate-admin">
+          <h3 className="candidate-admin-title">Danh sách ứng viên</h3>
+
+          {isOwner ? (
+            <div className="candidate-create-box">
+              <input
+                className="manage-input"
+                placeholder="Tên ứng viên mới"
+                value={newCandidate.name}
+                onChange={(e) => setNewCandidate((current) => ({ ...current, name: e.target.value }))}
+              />
+              <input
+                type="date"
+                className="manage-input"
+                value={newCandidate.birthDate}
+                onChange={(e) => setNewCandidate((current) => ({ ...current, birthDate: e.target.value }))}
+              />
+              <input
+                className="manage-input"
+                placeholder="Quê quán"
+                value={newCandidate.hometown}
+                onChange={(e) => setNewCandidate((current) => ({ ...current, hometown: e.target.value }))}
+              />
+              <textarea
+                className="manage-textarea"
+                placeholder="Mô tả ứng viên"
+                value={newCandidate.description}
+                onChange={(e) => setNewCandidate((current) => ({ ...current, description: e.target.value }))}
+              />
+              <input
+                type="file"
+                className="manage-input"
+                onChange={(e) => setNewCandidate((current) => ({ ...current, file: e.target.files[0] || null }))}
+              />
+              <img
+                src={
+                  newCandidatePreviewUrl ||
+                  resolveImageUrlWithFallback("", newCandidate.name || "Candidate")
+                }
+                alt={newCandidate.name || "New candidate preview"}
+                className="candidate-thumb"
+              />
               <button
                 className="save-btn"
-                onClick={handleUpdate}
-                disabled={saving || deleting || ending}
+                onClick={handleAddCandidate}
+                disabled={candidateSubmitting || status?.isEnded}
               >
-                {saving ? "Dang luu..." : "Cap nhat election"}
-              </button>
-
-              <button
-                className="end-btn"
-                onClick={handleEndElection}
-                disabled={saving || deleting || ending || status?.isEnded}
-              >
-                {ending ? "Dang ket thuc..." : "Ket thuc som election"}
-              </button>
-
-              <Link to={`/vote/${election.id}`} className="secondary-link">
-                Mo trang vote
-              </Link>
-
-              <button
-                className="delete-btn"
-                onClick={handleDelete}
-                disabled={saving || deleting || ending}
-              >
-                {deleting ? "Dang xoa..." : "Xoa election"}
+                {candidateSubmitting ? "Đang xử lý..." : "Thêm ứng viên"}
               </button>
             </div>
+          ) : null}
 
-            <div className="candidate-admin">
-              <h3 className="candidate-admin-title">CRUD ung vien</h3>
+          <div className="candidate-admin-list">
+            {candidates.length === 0 ? (
+              <p className="empty-note">Chưa có ứng viên nào.</p>
+            ) : (
+              candidates.map((candidate) => {
+                const edit = candidateEdits[candidate.id] || {
+                  name: candidate.name,
+                  birthDate: "",
+                  hometown: "",
+                  description: "",
+                  file: null,
+                };
 
-              <div className="candidate-create-box">
-                <input
-                  className="manage-input"
-                  placeholder="Ten ung vien moi"
-                  value={newCandidate.name}
-                  onChange={(e) => setNewCandidate((current) => ({ ...current, name: e.target.value }))}
-                />
-                <input
-                  type="file"
-                  className="manage-input"
-                  onChange={(e) => setNewCandidate((current) => ({ ...current, file: e.target.files[0] || null }))}
-                />
-                <button
-                  className="save-btn"
-                  onClick={handleAddCandidate}
-                  disabled={candidateSubmitting || status?.isEnded}
-                >
-                  {candidateSubmitting ? "Dang xu ly..." : "Them ung vien"}
-                </button>
-              </div>
+                return (
+                  <div key={candidate.id} className="candidate-admin-item">
+                    <div className="candidate-admin-meta">
+                      <p><strong>Số phiếu:</strong> {candidate.vote_count}</p>
+                      <p><strong>Ngày sinh:</strong> {formatCandidateBirthLabel(candidate.birth_date)}</p>
+                      <p><strong>Quê quán:</strong> {candidate.hometown || "Chưa cập nhật"}</p>
+                      <p><strong>Mô tả:</strong> {candidate.description || "Chưa có mô tả"}</p>
+                    </div>
 
-              <div className="candidate-admin-list">
-                {candidates.length === 0 ? (
-                  <p className="empty-note">Chua co ung vien nao.</p>
-                ) : (
-                  candidates.map((candidate) => {
-                    const edit = candidateEdits[candidate.id] || { name: candidate.name, file: null };
+                    <img
+                      src={
+                        candidatePreviewUrls[candidate.id] ||
+                        resolveImageUrlWithFallback(candidate.image, candidate.name)
+                      }
+                      alt={candidate.name}
+                      className="candidate-thumb"
+                    />
 
-                    return (
-                      <div key={candidate.id} className="candidate-admin-item">
-                        <div className="candidate-admin-meta">
-                          <p><strong>ID:</strong> {candidate.id}</p>
-                          <p><strong>Contract Index:</strong> {candidate.contract_candidate_index ?? "Chua dong bo"}</p>
-                          <p><strong>So phieu:</strong> {candidate.vote_count}</p>
-                        </div>
-
-                        {candidate.image ? (
-                          <img src={candidate.image} alt={candidate.name} className="candidate-thumb" />
-                        ) : null}
-
+                    {isOwner ? (
+                      <>
                         <input
                           className="manage-input"
                           value={edit.name}
                           onChange={(e) => handleCandidateEditChange(candidate.id, "name", e.target.value)}
                         />
-
+                        <input
+                          type="date"
+                          className="manage-input"
+                          value={edit.birthDate}
+                          onChange={(e) => handleCandidateEditChange(candidate.id, "birthDate", e.target.value)}
+                        />
+                        <input
+                          className="manage-input"
+                          value={edit.hometown}
+                          onChange={(e) => handleCandidateEditChange(candidate.id, "hometown", e.target.value)}
+                        />
+                        <textarea
+                          className="manage-textarea"
+                          value={edit.description}
+                          onChange={(e) => handleCandidateEditChange(candidate.id, "description", e.target.value)}
+                        />
                         <input
                           type="file"
                           className="manage-input"
@@ -520,24 +682,26 @@ function ElectionManage({ wallet }) {
                             onClick={() => handleUpdateCandidate(candidate)}
                             disabled={candidateSubmitting || status?.isEnded}
                           >
-                            Cap nhat
+                            Cập nhật
                           </button>
                           <button
                             className="delete-btn"
                             onClick={() => handleDeleteCandidate(candidate)}
                             disabled={candidateSubmitting || status?.isEnded}
                           >
-                            Xoa
+                            Xóa
                           </button>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </>
-        )}
+                      </>
+                    ) : (
+                      <p className="empty-note"><strong>Tên ứng viên:</strong> {candidate.name}</p>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

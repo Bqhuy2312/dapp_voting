@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import API from "../services/api";
 import { addCandidateOnChain, voteOnChain } from "../services/blockchain";
+import { formatCandidateBirthLabel } from "../utils/candidateProfile";
 import { getElectionStatus } from "../utils/electionStatus";
+import { resolveImageUrlWithFallback } from "../utils/imageUrl";
+import { formatWalletAddress } from "../utils/wallet";
 import "./VotePage.css";
 
 function VotePage({ wallet }) {
@@ -17,8 +20,13 @@ function VotePage({ wallet }) {
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [addingCandidate, setAddingCandidate] = useState(false);
-  const [candidateName, setCandidateName] = useState("");
-  const [candidateFile, setCandidateFile] = useState(null);
+  const [newCandidate, setNewCandidate] = useState({
+    name: "",
+    birthDate: "",
+    hometown: "",
+    description: "",
+    file: null,
+  });
   const [now, setNow] = useState(Date.now());
 
   const loadElection = async () => {
@@ -84,23 +92,23 @@ function VotePage({ wallet }) {
       setVerified(true);
     } catch (error) {
       console.error(error);
-      alert("Sai ma hoac election khong ton tai!");
+      alert("Sai mã hoặc election không tồn tại!");
     }
   };
 
   const handleVote = async (candidate) => {
     if (!wallet) {
-      alert("Vui long ket noi MetaMask o trang Home truoc.");
+      alert("Vui lòng kết nối MetaMask ở trang chủ trước.");
       return;
     }
 
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      alert("Election nay chua duoc dong bo blockchain.");
+      alert("Election này chưa được đồng bộ blockchain.");
       return;
     }
 
     if (!Number.isFinite(Number(candidate.contract_candidate_index))) {
-      alert("Ung vien nay chua duoc dong bo blockchain.");
+      alert("Ứng viên này chưa được đồng bộ blockchain.");
       return;
     }
 
@@ -120,10 +128,10 @@ function VotePage({ wallet }) {
 
       setHasVoted(true);
       await loadCandidates();
-      alert("Vote thanh cong!");
+      alert("Vote thành công!");
     } catch (error) {
       console.error(error);
-      alert("Loi vote");
+      alert("Lỗi vote");
     }
 
     setLoading(false);
@@ -131,17 +139,17 @@ function VotePage({ wallet }) {
 
   const handleAddCandidate = async () => {
     if (!isOwner) {
-      alert("Chi creator moi duoc them ung vien.");
+      alert("Chỉ creator mới được thêm ứng viên.");
       return;
     }
 
-    if (!candidateName.trim()) {
-      alert("Vui long nhap ten ung vien.");
+    if (!newCandidate.name.trim()) {
+      alert("Vui lòng nhập tên ứng viên.");
       return;
     }
 
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      alert("Election nay chua duoc dong bo blockchain.");
+      alert("Election này chưa được đồng bộ blockchain.");
       return;
     }
 
@@ -150,9 +158,9 @@ function VotePage({ wallet }) {
     try {
       let imageUrl = "";
 
-      if (candidateFile) {
+      if (newCandidate.file) {
         const formData = new FormData();
-        formData.append("image", candidateFile);
+        formData.append("image", newCandidate.file);
 
         const uploadRes = await API.post("/upload", formData);
         imageUrl = uploadRes.data.url;
@@ -160,24 +168,33 @@ function VotePage({ wallet }) {
 
       const chainRes = await addCandidateOnChain(
         Number(election.contract_election_id),
-        candidateName.trim(),
+        newCandidate.name.trim(),
       );
 
       await API.post("/candidates", {
         electionId: id,
-        name: candidateName.trim(),
+        name: newCandidate.name.trim(),
         image: imageUrl,
         wallet,
         contractCandidateIndex: chainRes.contractCandidateIndex,
+        birthDate: newCandidate.birthDate,
+        birth_date: newCandidate.birthDate,
+        hometown: newCandidate.hometown,
+        description: newCandidate.description,
       });
 
-      setCandidateName("");
-      setCandidateFile(null);
+      setNewCandidate({
+        name: "",
+        birthDate: "",
+        hometown: "",
+        description: "",
+        file: null,
+      });
       await loadCandidates();
-      alert("Them ung vien thanh cong!");
+      alert("Thêm ứng viên thành công!");
     } catch (error) {
       console.error(error);
-      alert("Khong the them ung vien.");
+      alert("Không thể thêm ứng viên.");
     }
 
     setAddingCandidate(false);
@@ -185,7 +202,7 @@ function VotePage({ wallet }) {
 
   const handleToggleHistory = async () => {
     if (!isOwner) {
-      alert("Chi creator moi duoc xem lich su vote.");
+      alert("Chỉ creator mới được xem lịch sử vote.");
       return;
     }
 
@@ -202,7 +219,7 @@ function VotePage({ wallet }) {
       setShowHistory(true);
     } catch (error) {
       console.error(error);
-      alert("Khong tai duoc lich su vote.");
+      alert("Không tải được lịch sử vote.");
     }
   };
 
@@ -217,18 +234,18 @@ function VotePage({ wallet }) {
         <div className="page-top">
           <div>
             <p className="page-label">Trang election</p>
-            <h2 className="vote-title">{election?.title || "Bo phieu"}</h2>
+            <h2 className="vote-title">{election?.title || "Bỏ phiếu"}</h2>
           </div>
           <Link to="/" className="back-home">
-            Ve Home
+            Về trang chủ
           </Link>
         </div>
 
         {wallet ? (
-          <p className="wallet">Vi: {wallet}</p>
+          <p className="wallet">Ví: {formatWalletAddress(wallet)}</p>
         ) : (
           <p className="wallet">
-            Vui long <Link to="/">ket noi MetaMask o trang Home</Link> truoc khi vote.
+            Vui lòng <Link to="/">kết nối MetaMask ở trang chủ</Link> trước khi vote.
           </p>
         )}
 
@@ -246,24 +263,44 @@ function VotePage({ wallet }) {
               {status.label}
             </span>
             <p className="status-countdown">
-              {status.isUpcoming ? "Bat dau sau: " : "Thoi gian con lai: "}
+              {status.isUpcoming ? "Bắt đầu sau: " : "Thời gian còn lại: "}
               {status.countdown}
+            </p>
+          </div>
+        ) : null}
+
+        {election ? (
+          <img
+            src={resolveImageUrlWithFallback(election.image, election.title)}
+            alt={election.title}
+            className="election-hero-image"
+          />
+        ) : null}
+
+        {election ? (
+          <div className="election-info-card">
+            <h3 className="section-title">Thông tin election</h3>
+            <div className="election-info-grid">
+              <p><strong>Trạng thái:</strong> {status?.label || "Không rõ"}</p>
+            </div>
+            <p className="election-description">
+              <strong>Mô tả:</strong> {election.description || "Chưa có mô tả cho election này."}
             </p>
           </div>
         ) : null}
 
         {!verified && (
           <div className="verify-box">
-            <p className="verify-title">Nhap ma truy cap de vao election</p>
+            <p className="verify-title">Nhập mã truy cập để vào election</p>
             <div className="verify-row">
               <input
-                placeholder="Nhap ma vote"
+                placeholder="Nhập mã vote"
                 className="input"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}
               />
               <button className="verify-btn" onClick={handleVerify}>
-                Xac nhan
+                Xác nhận
               </button>
             </div>
           </div>
@@ -274,43 +311,61 @@ function VotePage({ wallet }) {
             {isOwner ? (
               <div className="owner-tools">
                 <div className="owner-card">
-                  <h3 className="section-title">Quan tri election</h3>
+                  <h3 className="section-title">Quản trị election</h3>
                   <div className="owner-actions">
                     <button className="owner-btn" onClick={handleAddCandidate} disabled={addingCandidate || status?.isEnded}>
-                      {addingCandidate ? "Dang them..." : "Them ung vien"}
+                      {addingCandidate ? "Đang thêm..." : "Thêm ứng viên"}
                     </button>
                     <button className="history-btn" onClick={handleToggleHistory}>
-                      {showHistory ? "An lich su vote" : "Xem lich su ai da vote"}
+                      {showHistory ? "Ẩn lịch sử vote" : "Xem lịch sử ai đã vote"}
                     </button>
-                    <Link to={`/manage/${id}`} className="manage-link">Mo trang quan ly</Link>
+                    <Link to={`/manage/${id}`} className="manage-link">Mở trang quản lý</Link>
                   </div>
                   <div className="candidate-form">
                     <input
                       className="input full-width"
-                      placeholder="Ten ung vien moi"
-                      value={candidateName}
-                      onChange={(e) => setCandidateName(e.target.value)}
+                      placeholder="Tên ứng viên mới"
+                      value={newCandidate.name}
+                      onChange={(e) => setNewCandidate((current) => ({ ...current, name: e.target.value }))}
+                    />
+                    <input
+                      type="date"
+                      className="input full-width"
+                      value={newCandidate.birthDate}
+                      onChange={(e) => setNewCandidate((current) => ({ ...current, birthDate: e.target.value }))}
+                    />
+                    <input
+                      className="input full-width"
+                      placeholder="Quê quán"
+                      value={newCandidate.hometown}
+                      onChange={(e) => setNewCandidate((current) => ({ ...current, hometown: e.target.value }))}
+                    />
+                    <textarea
+                      className="input full-width"
+                      placeholder="Mô tả ứng viên"
+                      value={newCandidate.description}
+                      onChange={(e) => setNewCandidate((current) => ({ ...current, description: e.target.value }))}
                     />
                     <input
                       type="file"
                       className="input full-width file-field"
-                      onChange={(e) => setCandidateFile(e.target.files[0] || null)}
+                      onChange={(e) => setNewCandidate((current) => ({ ...current, file: e.target.files[0] || null }))}
                     />
                   </div>
                 </div>
 
                 {showHistory ? (
                   <div className="history-card">
-                    <h3 className="section-title">Lich su vote</h3>
+                    <h3 className="section-title">Lịch sử vote</h3>
                     {history.length === 0 ? (
-                      <p className="empty-state">Chua co ai vote.</p>
+                      <p className="empty-state">Chưa có ai vote.</p>
                     ) : (
                       <div className="history-list">
                         {history.map((item) => (
                           <div key={item.id} className="history-item">
                             <p className="history-voter">{item.voter}</p>
                             <p className="history-choice">
-                              Ung vien: {item.candidate_name || `ID ${item.candidate_index}`}
+                              Ứng viên: {item.candidate_name || `ID ${item.candidate_index}`}
                             </p>
                           </div>
                         ))}
@@ -323,7 +378,7 @@ function VotePage({ wallet }) {
 
             <div className="candidate-list">
               {candidates.length === 0 ? (
-                <p className="empty-state">Election nay chua co ung vien.</p>
+                <p className="empty-state">Election này chưa có ứng viên.</p>
               ) : (
                 candidates.map((candidate) => {
                   const voteCount = Number(candidate.vote_count || 0);
@@ -332,16 +387,23 @@ function VotePage({ wallet }) {
 
                   return (
                     <div key={candidate.id} className="candidate-card">
-                      {candidate.image ? (
-                        <img
-                          src={candidate.image}
-                          alt={candidate.name}
-                          className="candidate-image"
-                        />
-                      ) : null}
+                      <img
+                        src={resolveImageUrlWithFallback(candidate.image, candidate.name)}
+                        alt={candidate.name}
+                        className="candidate-image"
+                      />
 
                       <p className="candidate-name">{candidate.name}</p>
-                      <p className="candidate-meta">{voteCount} phieu</p>
+                      <p className="candidate-meta">{voteCount} phiếu</p>
+                      <p className="candidate-detail">
+                        <strong>Ngày sinh:</strong> {formatCandidateBirthLabel(candidate.birth_date)}
+                      </p>
+                      <p className="candidate-detail">
+                        <strong>Quê quán:</strong> {candidate.hometown || "Chưa cập nhật"}
+                      </p>
+                      <p className="candidate-detail">
+                        <strong>Mô tả:</strong> {candidate.description || "Chưa có mô tả"}
+                      </p>
 
                       <div className="progress-bar">
                         <div
@@ -360,16 +422,16 @@ function VotePage({ wallet }) {
                         className="vote-btn"
                       >
                         {!wallet
-                          ? "Chua ket noi vi"
+                          ? "Chưa kết nối ví"
                           : status?.isEnded
-                            ? "Election da ket thuc"
+                            ? "Election đã kết thúc"
                             : status?.isUpcoming
-                              ? "Chua toi gio vote"
-                          : hasVoted
-                            ? "Da vote"
-                            : loading
-                                ? "Dang xu ly..."
-                                : "Vote"}
+                              ? "Chưa tới giờ vote"
+                              : hasVoted
+                                ? "Đã vote"
+                                : loading
+                                  ? "Đang xử lý..."
+                                  : "Vote"}
                       </button>
                     </div>
                   );

@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import { connectWallet } from "../services/blockchain";
 import { getElectionStatus } from "../utils/electionStatus";
+import { resolveImageUrlWithFallback } from "../utils/imageUrl";
 import "./Home.css";
 
-function Home({ wallet, setWallet }) {
+function Home({ wallet, setWallet, onDisconnectWallet }) {
   const [elections, setElections] = useState([]);
   const [search, setSearch] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -28,10 +29,11 @@ function Home({ wallet, setWallet }) {
   const handleConnectWallet = async () => {
     try {
       const { address } = await connectWallet();
+      localStorage.removeItem("walletDisconnected");
       setWallet(address);
     } catch (error) {
       console.error(error);
-      alert("Khong the ket noi MetaMask. Vui long kiem tra vi cua ban.");
+      alert("Không thể kết nối MetaMask. Vui lòng kiểm tra ví của bạn.");
     }
   };
 
@@ -50,28 +52,33 @@ function Home({ wallet, setWallet }) {
   return (
     <div className="container">
       <div className="header">
-        <h2 className="title">Danh sach vote</h2>
+        <h2 className="title">Danh sách vote</h2>
 
         <div className="header-actions">
           {wallet ? (
-            <span className="wallet-badge">
-              {wallet.slice(0, 6)}...{wallet.slice(-4)}
-            </span>
+            <>
+              <span className="wallet-badge">
+                {wallet.slice(0, 6)}...{wallet.slice(-4)}
+              </span>
+              <button className="disconnect-btn" onClick={onDisconnectWallet}>
+                Đăng xuất
+              </button>
+            </>
           ) : (
             <button className="connect-btn" onClick={handleConnectWallet}>
-              Connect MetaMask
+              Kết nối MetaMask
             </button>
           )}
 
           <Link to="/create" className="create-btn">
-            + Tao Vote
+            + Tạo vote
           </Link>
         </div>
       </div>
 
       <input
         type="text"
-        placeholder="Tim kiem theo tieu de..."
+        placeholder="Tìm kiếm theo tiêu đề..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="search-input"
@@ -82,30 +89,30 @@ function Home({ wallet, setWallet }) {
           className={`filter-btn ${statusFilter === "all" ? "filter-btn-active" : ""}`}
           onClick={() => setStatusFilter("all")}
         >
-          Tat ca
+          Tất cả
         </button>
         <button
           className={`filter-btn ${statusFilter === "upcoming" ? "filter-btn-active" : ""}`}
           onClick={() => setStatusFilter("upcoming")}
         >
-          Sap dien ra
+          Sắp diễn ra
         </button>
         <button
           className={`filter-btn ${statusFilter === "active" ? "filter-btn-active" : ""}`}
           onClick={() => setStatusFilter("active")}
         >
-          Dang dien ra
+          Đang diễn ra
         </button>
         <button
           className={`filter-btn ${statusFilter === "ended" ? "filter-btn-active" : ""}`}
           onClick={() => setStatusFilter("ended")}
         >
-          Da ket thuc
+          Đã kết thúc
         </button>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="empty">Khong co ket qua</p>
+        <p className="empty">Không có kết quả</p>
       ) : (
         filtered.map((election) => {
           const isOwner =
@@ -119,9 +126,15 @@ function Home({ wallet, setWallet }) {
 
           return (
             <div key={election.id} className="card">
+              <img
+                src={resolveImageUrlWithFallback(election.image, election.title)}
+                alt={election.title}
+                className="card-image"
+              />
+
               <div className="card-content">
                 <h3 className="card-title">{election.title}</h3>
-                {isOwner ? <span className="owner-badge">Election cua ban</span> : null}
+                {isOwner ? <span className="owner-badge">Election của bạn</span> : null}
                 <div className="status-row">
                   <span
                     className={`status-badge ${status.isEnded ? "status-ended" : "status-active"}`}
@@ -129,7 +142,7 @@ function Home({ wallet, setWallet }) {
                     {status.label}
                   </span>
                   <span className="countdown-text">
-                    {status.isUpcoming ? "Bat dau sau: " : "Con lai: "}
+                    {status.isUpcoming ? "Bắt đầu sau: " : "Còn lại: "}
                     {status.countdown}
                   </span>
                 </div>
@@ -138,12 +151,12 @@ function Home({ wallet, setWallet }) {
               <div className="card-actions">
                 {isOwner ? (
                   <Link to={`/manage/${election.id}`} className="manage-btn">
-                    Quan ly
+                    Quản lý
                   </Link>
                 ) : null}
 
                 <Link to={`/vote/${election.id}`} className="vote-btn">
-                  {status.isEnded ? "Xem ket qua" : "Vote"}
+                  {status.isEnded ? "Xem kết quả" : "Vote"}
                 </Link>
               </div>
             </div>
