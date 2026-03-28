@@ -12,9 +12,12 @@ exports.addCandidate = (req, res) => {
     hometown,
     description,
   } = req.body;
-  const normalizedWallet = String(wallet || "").trim().toLowerCase();
+  const normalizedWallet = String(wallet || "")
+    .trim()
+    .toLowerCase();
   const normalizedContractCandidateIndex = Number(contractCandidateIndex);
-  const normalizedBirthDate = String(birthDate ?? birth_date ?? "").trim() || null;
+  const normalizedBirthDate =
+    String(birthDate ?? birth_date ?? "").trim() || null;
   const normalizedHometown = String(hometown || "").trim();
   const normalizedDescription = String(description || "").trim();
 
@@ -27,23 +30,32 @@ exports.addCandidate = (req, res) => {
   }
 
   if (!Number.isFinite(normalizedContractCandidateIndex)) {
-    return res.status(400).json({ message: "Contract candidate index is required" });
+    return res
+      .status(400)
+      .json({ message: "Contract candidate index is required" });
   }
 
-  db.query("SELECT creator FROM elections WHERE id = ?", [electionId], (electionErr, electionResult) => {
-    if (electionErr) return res.status(500).json(electionErr);
+  db.query(
+    "SELECT creator FROM elections WHERE id = ?",
+    [electionId],
+    (electionErr, electionResult) => {
+      if (electionErr) return res.status(500).json(electionErr);
 
-    if (electionResult.length === 0) {
-      return res.status(404).json({ message: "Election not found" });
-    }
+      if (electionResult.length === 0) {
+        return res.status(404).json({ message: "Election not found" });
+      }
 
-    const creator = String(electionResult[0].creator || "").trim().toLowerCase();
+      const creator = String(electionResult[0].creator || "")
+        .trim()
+        .toLowerCase();
 
-    if (creator !== normalizedWallet) {
-      return res.status(403).json({ message: "Only creator can add candidates" });
-    }
+      if (creator !== normalizedWallet) {
+        return res
+          .status(403)
+          .json({ message: "Only creator can add candidates" });
+      }
 
-    const sql = `
+      const sql = `
       INSERT INTO candidates (
         election_id,
         name,
@@ -56,24 +68,25 @@ exports.addCandidate = (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(
-      sql,
-      [
-        electionId,
-        name.trim(),
-        image,
-        normalizedContractCandidateIndex,
-        normalizedBirthDate,
-        normalizedHometown,
-        normalizedDescription,
-      ],
-      (err, result) => {
-        if (err) return res.status(500).json(err);
+      db.query(
+        sql,
+        [
+          electionId,
+          name.trim(),
+          image,
+          normalizedContractCandidateIndex,
+          normalizedBirthDate,
+          normalizedHometown,
+          normalizedDescription,
+        ],
+        (err, result) => {
+          if (err) return res.status(500).json(err);
 
-        res.json({ success: true, id: result.insertId });
-      },
-    );
-  });
+          res.json({ success: true, id: result.insertId });
+        },
+      );
+    },
+  );
 };
 
 exports.getCandidates = (req, res) => {
@@ -97,8 +110,11 @@ exports.getCandidates = (req, res) => {
 
 exports.updateCandidate = (req, res) => {
   const { id } = req.params;
-  const { name, image, wallet, birthDate, birth_date, hometown, description } = req.body;
-  const normalizedWallet = String(wallet || "").trim().toLowerCase();
+  const { name, image, wallet, birthDate, birth_date, hometown, description } =
+    req.body;
+  const normalizedWallet = String(wallet || "")
+    .trim()
+    .toLowerCase();
 
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
@@ -120,15 +136,25 @@ exports.updateCandidate = (req, res) => {
 
     const candidate = result[0];
 
-    if (String(candidate.creator || "").trim().toLowerCase() !== normalizedWallet) {
-      return res.status(403).json({ message: "Only creator can update candidates" });
+    if (
+      String(candidate.creator || "")
+        .trim()
+        .toLowerCase() !== normalizedWallet
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only creator can update candidates" });
     }
 
     const nextName = String(name ?? candidate.name).trim();
     const nextImage = image ?? candidate.image;
-    const nextBirthDate = String(birthDate ?? birth_date ?? candidate.birth_date ?? "").trim() || null;
+    const nextBirthDate =
+      String(birthDate ?? birth_date ?? candidate.birth_date ?? "").trim() ||
+      null;
     const nextHometown = String(hometown ?? candidate.hometown ?? "").trim();
-    const nextDescription = String(description ?? candidate.description ?? "").trim();
+    const nextDescription = String(
+      description ?? candidate.description ?? "",
+    ).trim();
 
     db.query(
       `
@@ -148,7 +174,9 @@ exports.updateCandidate = (req, res) => {
 
 exports.deleteCandidate = (req, res) => {
   const { id } = req.params;
-  const normalizedWallet = String(req.query.wallet || "").trim().toLowerCase();
+  const normalizedWallet = String(req.query.wallet || "")
+    .trim()
+    .toLowerCase();
 
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
@@ -170,8 +198,14 @@ exports.deleteCandidate = (req, res) => {
 
     const candidate = result[0];
 
-    if (String(candidate.creator || "").trim().toLowerCase() !== normalizedWallet) {
-      return res.status(403).json({ message: "Only creator can delete candidates" });
+    if (
+      String(candidate.creator || "")
+        .trim()
+        .toLowerCase() !== normalizedWallet
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only creator can delete candidates" });
     }
 
     db.query("DELETE FROM candidates WHERE id = ?", [id], (deleteErr) => {

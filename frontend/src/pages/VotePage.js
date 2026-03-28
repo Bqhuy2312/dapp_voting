@@ -78,6 +78,19 @@ function VotePage({ wallet }) {
     election &&
     String(election.creator || "").toLowerCase() === wallet.toLowerCase();
 
+  useEffect(() => {
+    if (!election) {
+      return;
+    }
+
+    if (isOwner) {
+      setVerified(true);
+      return;
+    }
+
+    setVerified(false);
+  }, [election, isOwner, wallet]);
+
   const status = election
     ? getElectionStatus(election.start_time, election.end_time, now)
     : null;

@@ -210,6 +210,10 @@
   margin-bottom: 28px;
 }
 
+.owner-card .owner-actions {
+  margin-bottom: 20px;
+}
+
 .history-list {
   display: grid;
   gap: 12px;
