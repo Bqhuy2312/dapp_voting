@@ -1,16 +1,20 @@
 ﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import { useNotifications } from "../components/Notifications";
 import {
   createElectionOnChain,
   getReadableBlockchainError,
 } from "../services/blockchain";
+import { uploadImage } from "../services/upload";
 import { resolveImageUrlWithFallback } from "../utils/imageUrl";
 import { formatWalletAddress } from "../utils/wallet";
 import "./CreateElection.css";
 
+// Trang tạo election mới từ form nhập liệu và giao dịch blockchain.
 function CreateElection({ wallet }) {
   const navigate = useNavigate();
+  const { notify } = useNotifications();
   const [data, setData] = useState({
     title: "",
     description: "",
@@ -22,6 +26,7 @@ function CreateElection({ wallet }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
 
+  // Tạo ảnh preview tạm thời từ file người dùng vừa chọn.
   useEffect(() => {
     if (!file) {
       setPreviewUrl("");
@@ -36,6 +41,7 @@ function CreateElection({ wallet }) {
     };
   }, [file]);
 
+  // Tạo election trên blockchain trước, sau đó lưu metadata vào backend.
   const handleCreate = async () => {
     if (!wallet) {
       setErrorMessage("Vui lòng kết nối MetaMask ở trang chủ trước khi tạo election.");
@@ -67,11 +73,7 @@ function CreateElection({ wallet }) {
       let imageUrl = "";
 
       if (file) {
-        const formData = new FormData();
-        formData.append("image", file);
-
-        const uploadRes = await API.post("/upload", formData);
-        imageUrl = uploadRes.data.url;
+        imageUrl = await uploadImage(file, { requireCloud: true });
       }
 
       const chainRes = await createElectionOnChain(startTime, endTime);
@@ -86,7 +88,10 @@ function CreateElection({ wallet }) {
         contractElectionId: chainRes.contractElectionId,
       });
 
-      alert("Tạo election thành công");
+      notify("Election đã được tạo thành công.", {
+        type: "success",
+        title: "Tạo election thành công",
+      });
       navigate("/");
     } catch (err) {
       console.error(err);

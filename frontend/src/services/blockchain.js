@@ -1,8 +1,12 @@
 import { ethers } from "ethers";
 import VotingABI from "../abi/Voting.json";
 
+// Địa chỉ contract Voting đã deploy để frontend gọi bằng ethers.
+// Deployed Voting contract address used by the frontend via ethers.
 const CONTRACT_ADDRESS = "0x5Eb10F4003fD1ebaBd7205547Ef02557bdc7Ec24";
 
+// Lấy ví đã kết nối sẵn trong MetaMask mà không hiện popup xin quyền.
+// Read the wallet already connected in MetaMask without opening a permission popup.
 export const getConnectedWallet = async () => {
   if (!window.ethereum) {
     return "";
@@ -12,6 +16,8 @@ export const getConnectedWallet = async () => {
   return accounts[0] || "";
 };
 
+// Yêu cầu người dùng kết nối MetaMask và trả về signer đang hoạt động.
+// Request MetaMask access and return the active signer.
 export const connectWallet = async () => {
   if (!window.ethereum) {
     throw new Error("MetaMask chưa được cài đặt");
@@ -31,6 +37,8 @@ export const connectWallet = async () => {
   return { signer, address };
 };
 
+// Tạo instance contract Voting từ signer MetaMask hiện tại.
+// Build a Voting contract instance from the current MetaMask signer.
 export const getContract = async () => {
   const { signer } = await connectWallet();
   const provider = signer.provider;
@@ -50,6 +58,8 @@ export const getContract = async () => {
   return new ethers.Contract(CONTRACT_ADDRESS, VotingABI.abi ?? VotingABI, signer);
 };
 
+// Chuyển lỗi kỹ thuật từ ethers/contract thành thông điệp dễ hiểu hơn.
+// Convert low-level ethers/contract errors into friendlier UI messages.
 export const getReadableBlockchainError = (error) => {
   const message =
     error?.shortMessage ||
@@ -93,6 +103,8 @@ export const getReadableBlockchainError = (error) => {
   return message || "Không xác định được lỗi từ blockchain.";
 };
 
+// Tìm một event cụ thể trong transaction receipt để lấy dữ liệu trả về.
+// Find a named event inside the transaction receipt.
 const parseLogByName = (contract, receipt, eventName) => {
   for (const log of receipt.logs) {
     try {
@@ -108,6 +120,8 @@ const parseLogByName = (contract, receipt, eventName) => {
   return null;
 };
 
+// Tạo election mới trên blockchain và lấy lại id election đã sinh ra.
+// Create an election on-chain and recover the generated election id.
 export const createElectionOnChain = async (startTime, endTime) => {
   const contract = await getContract();
   const tx = await contract.createElection(
@@ -125,6 +139,8 @@ export const createElectionOnChain = async (startTime, endTime) => {
   return { tx, contractElectionId };
 };
 
+// Thêm ứng viên lên blockchain và trả về chỉ số ứng viên trong contract.
+// Add a candidate on-chain and return its contract index.
 export const addCandidateOnChain = async (contractElectionId, name) => {
   const contract = await getContract();
   const tx = await contract.addCandidate(contractElectionId, name);
@@ -138,6 +154,8 @@ export const addCandidateOnChain = async (contractElectionId, name) => {
   };
 };
 
+// Cập nhật tên ứng viên đã tồn tại trên blockchain.
+// Update an existing candidate name on-chain.
 export const updateCandidateOnChain = async (
   contractElectionId,
   contractCandidateIndex,
@@ -154,6 +172,8 @@ export const updateCandidateOnChain = async (
   return { tx };
 };
 
+// Đánh dấu ứng viên là đã xóa trên blockchain.
+// Delete a candidate on-chain.
 export const deleteCandidateOnChain = async (
   contractElectionId,
   contractCandidateIndex,
@@ -168,6 +188,8 @@ export const deleteCandidateOnChain = async (
   return { tx };
 };
 
+// Kết thúc election sớm trực tiếp trên smart contract.
+// End an election early directly on the smart contract.
 export const endElectionOnChain = async (contractElectionId) => {
   const contract = await getContract();
   const tx = await contract.endElection(contractElectionId);
@@ -176,6 +198,8 @@ export const endElectionOnChain = async (contractElectionId) => {
   return { tx };
 };
 
+// Gửi giao dịch vote cho ứng viên trên blockchain.
+// Send the on-chain vote transaction for a candidate.
 export const voteOnChain = async (contractElectionId, contractCandidateIndex) => {
   const contract = await getContract();
   const tx = await contract.vote(contractElectionId, contractCandidateIndex);

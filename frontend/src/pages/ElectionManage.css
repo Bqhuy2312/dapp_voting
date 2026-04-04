@@ -76,6 +76,28 @@
   margin-bottom: 20px;
 }
 
+.blocked-box-strong {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.blocked-title,
+.blocked-text {
+  margin: 0;
+}
+
+.blocked-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary-strong);
+}
+
+.blocked-text {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
 .owner-panel p,
 .candidate-admin-meta p {
   margin: 0 0 10px;
@@ -225,6 +247,50 @@
   color: var(--text-soft);
 }
 
+.activity-list {
+  display: grid;
+  gap: 12px;
+}
+
+.activity-item {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(18, 60, 105, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.activity-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.activity-title,
+.activity-time,
+.activity-summary,
+.activity-meta {
+  margin: 0;
+}
+
+.activity-title {
+  font-weight: 800;
+  color: var(--primary-strong);
+}
+
+.activity-time,
+.activity-meta {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.activity-summary {
+  color: var(--text);
+  line-height: 1.55;
+  margin-bottom: 6px;
+}
+
 @media (max-width: 760px) {
   .manage-header,
   .manage-actions,
@@ -251,5 +317,9 @@
 
   .preview-image {
     height: 200px;
+  }
+
+  .activity-top {
+    flex-direction: column;
   }
 }

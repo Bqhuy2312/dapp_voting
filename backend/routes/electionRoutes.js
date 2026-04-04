@@ -4,6 +4,7 @@ const controller = require("../controllers/electionController");
 
 router.post("/", controller.createElection);
 router.get("/", controller.getAllElections);
+router.get("/:id/activity", controller.getElectionActivities);
 router.post("/:id/end", controller.endElectionEarly);
 router.get("/:id", controller.getElectionById);
 router.put("/:id", controller.updateElection);

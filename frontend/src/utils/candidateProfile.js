@@ -1,4 +1,5 @@
 ﻿export function formatCandidateBirthInputValue(birthDate) {
+  // Đưa ngày sinh về định dạng YYYY-MM-DD để bind vào input type="date".
   if (!birthDate) {
     return "";
   }
@@ -17,6 +18,7 @@
 }
 
 export function getCandidateAge(birthDate) {
+  // Tính tuổi hiện tại từ ngày sinh để hiển thị thêm cho người dùng.
   if (!birthDate) {
     return "";
   }
@@ -42,6 +44,7 @@ export function getCandidateAge(birthDate) {
 }
 
 export function formatCandidateBirthLabel(birthDate) {
+  // Trả về chuỗi ngày sinh thân thiện kèm tuổi nếu có thể tính được.
   if (!birthDate) {
     return "Chưa cập nhật";
   }

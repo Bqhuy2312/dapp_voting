@@ -1,4 +1,5 @@
 ﻿export function getElectionStatus(startTime, endTime, now = Date.now()) {
+  // Tính trạng thái election và countdown dựa trên thời gian bắt đầu/kết thúc.
   const startTimestamp = Number(startTime);
   const endTimestamp = Number(endTime);
 

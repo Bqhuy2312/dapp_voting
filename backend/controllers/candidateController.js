@@ -1,6 +1,9 @@
 const db = require("../config/db");
+const { logElectionActivity } = require("../services/activityLogger");
 
+// Thêm ứng viên mới vào election sau khi kiểm tra quyền creator.
 exports.addCandidate = (req, res) => {
+  // Lấy dữ liệu từ body
   const {
     electionId,
     name,
@@ -12,6 +15,7 @@ exports.addCandidate = (req, res) => {
     hometown,
     description,
   } = req.body;
+  // Chuẩn hóa dữ liệu đầu vào
   const normalizedWallet = String(wallet || "")
     .trim()
     .toLowerCase();
@@ -20,7 +24,8 @@ exports.addCandidate = (req, res) => {
     String(birthDate ?? birth_date ?? "").trim() || null;
   const normalizedHometown = String(hometown || "").trim();
   const normalizedDescription = String(description || "").trim();
-
+  
+  // Validate dữ liệu
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
   }
@@ -35,6 +40,7 @@ exports.addCandidate = (req, res) => {
       .json({ message: "Contract candidate index is required" });
   }
 
+  // kiểm tra xem electionId có tồn tại và wallet có phải là creator của election đó không
   db.query(
     "SELECT creator FROM elections WHERE id = ?",
     [electionId],
@@ -44,7 +50,8 @@ exports.addCandidate = (req, res) => {
       if (electionResult.length === 0) {
         return res.status(404).json({ message: "Election not found" });
       }
-
+      
+      // Chuẩn hóa creator để so sánh với wallet
       const creator = String(electionResult[0].creator || "")
         .trim()
         .toLowerCase();
@@ -55,6 +62,7 @@ exports.addCandidate = (req, res) => {
           .json({ message: "Only creator can add candidates" });
       }
 
+      // Thêm ứng viên vào database
       const sql = `
       INSERT INTO candidates (
         election_id,
@@ -68,6 +76,7 @@ exports.addCandidate = (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
+      // Kiểm tra xem đã có ứng viên nào trong election này có cùng contract_candidate_index chưa
       db.query(
         sql,
         [
@@ -82,6 +91,18 @@ exports.addCandidate = (req, res) => {
         (err, result) => {
           if (err) return res.status(500).json(err);
 
+          logElectionActivity({
+            electionId,
+            actorWallet: normalizedWallet,
+            actionType: "add_candidate",
+            entityType: "candidate",
+            entityId: result.insertId,
+            summary: `Thêm ứng viên "${name.trim()}"`,
+            details: {
+              contractCandidateIndex: normalizedContractCandidateIndex,
+            },
+          });
+
           res.json({ success: true, id: result.insertId });
         },
       );
@@ -89,6 +110,7 @@ exports.addCandidate = (req, res) => {
   );
 };
 
+// Trả về danh sách ứng viên của một election theo thứ tự hiển thị.
 exports.getCandidates = (req, res) => {
   const { electionId } = req.params;
 
@@ -108,18 +130,21 @@ exports.getCandidates = (req, res) => {
   );
 };
 
+// Cập nhật hồ sơ ứng viên và chỉ cho phép creator của election thực hiện.
 exports.updateCandidate = (req, res) => {
   const { id } = req.params;
   const { name, image, wallet, birthDate, birth_date, hometown, description } =
     req.body;
+  // Chuẩn hóa wallet để kiểm tra quyền
   const normalizedWallet = String(wallet || "")
     .trim()
     .toLowerCase();
-
+  // Chuẩn hóa các trường dữ liệu khác để cập nhật
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
   }
 
+  // Lấy thông tin candidate và election để kiểm tra quyền
   const sql = `
     SELECT c.*, e.creator
     FROM candidates c
@@ -127,6 +152,7 @@ exports.updateCandidate = (req, res) => {
     WHERE c.id = ?
   `;
 
+  // Kiểm tra xem candidate có tồn tại không và wallet có phải là creator của election đó không
   db.query(sql, [id], (err, result) => {
     if (err) return res.status(500).json(err);
 
@@ -134,6 +160,7 @@ exports.updateCandidate = (req, res) => {
       return res.status(404).json({ message: "Candidate not found" });
     }
 
+    // Chuẩn hóa creator để so sánh với wallet
     const candidate = result[0];
 
     if (
@@ -145,7 +172,7 @@ exports.updateCandidate = (req, res) => {
         .status(403)
         .json({ message: "Only creator can update candidates" });
     }
-
+    // Xác định giá trị mới cho các trường, nếu không có dữ liệu mới thì giữ nguyên giá trị cũ
     const nextName = String(name ?? candidate.name).trim();
     const nextImage = image ?? candidate.image;
     const nextBirthDate =
@@ -155,7 +182,8 @@ exports.updateCandidate = (req, res) => {
     const nextDescription = String(
       description ?? candidate.description ?? "",
     ).trim();
-
+    
+    // Cập nhật ứng viên trong database
     db.query(
       `
         UPDATE candidates
@@ -166,18 +194,36 @@ exports.updateCandidate = (req, res) => {
       (updateErr) => {
         if (updateErr) return res.status(500).json(updateErr);
 
+        logElectionActivity({
+          electionId: candidate.election_id,
+          actorWallet: normalizedWallet,
+          actionType: "update_candidate",
+          entityType: "candidate",
+          entityId: Number(id),
+          summary: `Cập nhật ứng viên "${nextName}"`,
+          details: {
+            nameChanged: nextName !== candidate.name,
+            imageChanged: nextImage !== candidate.image,
+            birthDateChanged: String(nextBirthDate || "") !== String(candidate.birth_date || ""),
+            hometownChanged: nextHometown !== String(candidate.hometown || ""),
+            descriptionChanged: nextDescription !== String(candidate.description || ""),
+          },
+        });
+
         res.json({ success: true });
       },
     );
   });
 };
 
+// Xóa ứng viên khỏi election sau khi xác minh đúng creator.
 exports.deleteCandidate = (req, res) => {
   const { id } = req.params;
+  // Chuẩn hóa wallet để kiểm tra quyền
   const normalizedWallet = String(req.query.wallet || "")
     .trim()
     .toLowerCase();
-
+  // Kiểm tra xem wallet có tồn tại không
   if (!normalizedWallet) {
     return res.status(400).json({ message: "Wallet is required" });
   }
@@ -188,14 +234,14 @@ exports.deleteCandidate = (req, res) => {
     JOIN elections e ON e.id = c.election_id
     WHERE c.id = ?
   `;
-
+  // Kiểm tra xem candidate có tồn tại không và wallet có phải là creator của election đó không
   db.query(sql, [id], (err, result) => {
     if (err) return res.status(500).json(err);
 
     if (result.length === 0) {
       return res.status(404).json({ message: "Candidate not found" });
     }
-
+    // Chuẩn hóa creator để so sánh với wallet
     const candidate = result[0];
 
     if (
@@ -207,9 +253,18 @@ exports.deleteCandidate = (req, res) => {
         .status(403)
         .json({ message: "Only creator can delete candidates" });
     }
-
+    // Xóa ứng viên
     db.query("DELETE FROM candidates WHERE id = ?", [id], (deleteErr) => {
       if (deleteErr) return res.status(500).json(deleteErr);
+
+      logElectionActivity({
+        electionId: candidate.election_id,
+        actorWallet: normalizedWallet,
+        actionType: "delete_candidate",
+        entityType: "candidate",
+        entityId: Number(id),
+        summary: `Xóa ứng viên "${candidate.name}"`,
+      });
 
       res.json({ success: true });
     });

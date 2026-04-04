@@ -1,6 +1,8 @@
 const db = require("../config/db");
 const bcrypt = require("bcrypt");
-
+const { logElectionActivity } = require("../services/activityLogger");
+// Xử lý các yêu cầu liên quan đến bầu cử, bao gồm bỏ phiếu, kiểm tra đã bỏ phiếu hay chưa, và xem lịch sử bỏ phiếu
+// Kiểm tra mã truy cập người dùng nhập có khớp với election hay không.
 exports.verifyAccessCode = (req, res) => {
   const { electionId, accessCode } = req.body;
   const normalizedAccessCode = String(accessCode ?? "").trim();
@@ -30,10 +32,11 @@ exports.verifyAccessCode = (req, res) => {
     },
   );
 };
-
+// Xử lý bỏ phiếu
+// Ghi nhận một lượt vote nếu ví chưa vote và election vẫn còn hiệu lực.
 exports.vote = (req, res) => {
   const { electionId, voter, candidateId } = req.body;
-
+  
   if (!voter) {
     return res.status(400).json({ message: "Wallet is required" });
   }
@@ -88,6 +91,19 @@ exports.vote = (req, res) => {
                 (updateErr) => {
                   if (updateErr) return res.status(500).json(updateErr);
 
+                  logElectionActivity({
+                    electionId,
+                    actorWallet: voter,
+                    actionType: "vote",
+                    entityType: "vote",
+                    entityId: Number(candidateId),
+                    summary: `Bỏ phiếu cho ứng viên "${candidateRows[0].name}"`,
+                    details: {
+                      candidateId: Number(candidateId),
+                      candidateName: candidateRows[0].name,
+                    },
+                  });
+
                   res.json({ success: true });
                 },
               );
@@ -98,7 +114,8 @@ exports.vote = (req, res) => {
     );
   });
 };
-
+// Kiểm tra xem một wallet đã bỏ phiếu trong một cuộc bầu cử hay chưa
+// Kiểm tra một ví đã bỏ phiếu trong election hiện tại hay chưa.
 exports.checkVoted = (req, res) => {
   const { electionId, voter } = req.query;
 
@@ -116,6 +133,7 @@ exports.checkVoted = (req, res) => {
   );
 };
 
+// Trả về lịch sử vote cho creator để theo dõi ai đã bầu cho ai.
 exports.getVoteHistory = (req, res) => {
   const { electionId, wallet } = req.query;
   const normalizedWallet = String(wallet || "").trim().toLowerCase();

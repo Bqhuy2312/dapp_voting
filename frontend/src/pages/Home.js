@@ -1,23 +1,26 @@
 ﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
+import { useNotifications } from "../components/Notifications";
 import { connectWallet } from "../services/blockchain";
 import { getElectionStatus } from "../utils/electionStatus";
 import { resolveImageUrlWithFallback } from "../utils/imageUrl";
 import "./Home.css";
 
+// Trang chủ hiển thị danh sách election, bộ lọc và trạng thái ví MetaMask.
 function Home({ wallet, setWallet, onDisconnectWallet }) {
+  const { notify } = useNotifications();
   const [elections, setElections] = useState([]);
   const [search, setSearch] = useState("");
   const [now, setNow] = useState(Date.now());
   const [statusFilter, setStatusFilter] = useState("all");
-
+  // Lấy danh sách election để hiển thị ở trang chủ.
   useEffect(() => {
     API.get("/elections")
       .then((res) => setElections(res.data))
       .catch((err) => console.error(err));
   }, []);
-
+  // Cập nhật thời gian hiện tại mỗi giây để countdown luôn đúng.
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
@@ -25,7 +28,7 @@ function Home({ wallet, setWallet, onDisconnectWallet }) {
 
     return () => clearInterval(timer);
   }, []);
-
+  // Kết nối MetaMask và lưu ví đang hoạt động vào state ứng dụng.
   const handleConnectWallet = async () => {
     try {
       const { address } = await connectWallet();
@@ -33,10 +36,13 @@ function Home({ wallet, setWallet, onDisconnectWallet }) {
       setWallet(address);
     } catch (error) {
       console.error(error);
-      alert("Không thể kết nối MetaMask. Vui lòng kiểm tra ví của bạn.");
+      notify("Không thể kết nối MetaMask. Vui lòng kiểm tra ví của bạn.", {
+        type: "error",
+        title: "Kết nối ví thất bại",
+      });
     }
   };
-
+// Chuẩn hóa địa chỉ ví để so sánh và lọc cuộc bầu cử
   const normalizedWallet = wallet.toLowerCase();
   const filtered = elections.filter((election) => {
     const matchesSearch = election.title

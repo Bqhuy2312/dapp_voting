@@ -3,7 +3,7 @@ const cloudinary = require("cloudinary").v2;
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const hasCloudinaryUrl = String(process.env.CLOUDINARY_URL || "").trim();
-
+// Nếu có CLOUDINARY_URL thì dùng nó, nếu không thì dùng các biến riêng lẻ
 if (hasCloudinaryUrl) {
   cloudinary.config({
     cloudinary_url: hasCloudinaryUrl,

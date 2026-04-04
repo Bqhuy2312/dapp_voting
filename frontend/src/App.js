@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import VotePage from "./pages/VotePage";
 import CreateElection from "./pages/CreateElection";
 import ElectionManage from "./pages/ElectionManage";
+import { NotificationProvider } from "./components/Notifications";
 import { getConnectedWallet } from "./services/blockchain";
 
 const WALLET_SESSION_KEY = "walletDisconnected";
@@ -66,23 +67,25 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              wallet={wallet}
-              setWallet={setWallet}
-              onDisconnectWallet={handleDisconnectWallet}
-            />
-          }
-        />
-        <Route path="/vote/:id" element={<VotePage wallet={wallet} />} />
-        <Route path="/create" element={<CreateElection wallet={wallet} />} />
-        <Route path="/manage/:id" element={<ElectionManage wallet={wallet} />} />
-      </Routes>
-    </BrowserRouter>
+    <NotificationProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                wallet={wallet}
+                setWallet={setWallet}
+                onDisconnectWallet={handleDisconnectWallet}
+              />
+            }
+          />
+          <Route path="/vote/:id" element={<VotePage wallet={wallet} />} />
+          <Route path="/create" element={<CreateElection wallet={wallet} />} />
+          <Route path="/manage/:id" element={<ElectionManage wallet={wallet} />} />
+        </Routes>
+      </BrowserRouter>
+    </NotificationProvider>
   );
 }
 

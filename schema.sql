@@ -61,3 +61,27 @@ CREATE TABLE IF NOT EXISTS votes (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS election_activities (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  election_id INT UNSIGNED NOT NULL,
+  actor_wallet VARCHAR(255) NULL,
+  action_type VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(100) NOT NULL,
+  entity_id INT UNSIGNED NULL,
+  summary TEXT NOT NULL,
+  details_json TEXT NULL,
+  created_at BIGINT NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_election_activities_election_id (election_id),
+  KEY idx_election_activities_created_at (created_at),
+  CONSTRAINT fk_activities_election
+    FOREIGN KEY (election_id) REFERENCES elections(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+  
+  select * from candidates;
+  select * from elections;

@@ -1,16 +1,19 @@
 ﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import API from "../services/api";
+import { useNotifications } from "../components/Notifications";
 import { addCandidateOnChain, voteOnChain } from "../services/blockchain";
+import { uploadImage } from "../services/upload";
 import { formatCandidateBirthLabel } from "../utils/candidateProfile";
 import { getElectionStatus } from "../utils/electionStatus";
 import { resolveImageUrlWithFallback } from "../utils/imageUrl";
 import { formatWalletAddress } from "../utils/wallet";
 import "./VotePage.css";
 
+// Trang chi tiết election cho phép xác thực, vote và theo dõi kết quả.
 function VotePage({ wallet }) {
   const { id } = useParams();
-
+  const { notify } = useNotifications();
   const [election, setElection] = useState(null);
   const [candidates, setCandidates] = useState([]);
   const [history, setHistory] = useState([]);
@@ -20,6 +23,7 @@ function VotePage({ wallet }) {
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [addingCandidate, setAddingCandidate] = useState(false);
+  // Lưu dữ liệu form thêm ứng viên để creator có thể thao tác ngay trên trang vote.
   const [newCandidate, setNewCandidate] = useState({
     name: "",
     birthDate: "",
@@ -29,6 +33,7 @@ function VotePage({ wallet }) {
   });
   const [now, setNow] = useState(Date.now());
 
+  // Tải thông tin chi tiết của election từ backend.
   const loadElection = async () => {
     try {
       const res = await API.get(`/elections/${id}`);
@@ -37,7 +42,7 @@ function VotePage({ wallet }) {
       console.error(error);
     }
   };
-
+  // Tải danh sách ứng viên hiện có của election.
   const loadCandidates = async () => {
     try {
       const res = await API.get(`/candidates/${id}`);
@@ -46,12 +51,12 @@ function VotePage({ wallet }) {
       console.error(error);
     }
   };
-
+  // Nạp election và candidates khi mở trang hoặc khi id thay đổi.
   useEffect(() => {
     loadElection();
     loadCandidates();
   }, [id]);
-
+  // Cập nhật thời gian hiện tại để phần countdown luôn đúng.
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
@@ -59,7 +64,7 @@ function VotePage({ wallet }) {
 
     return () => clearInterval(timer);
   }, []);
-
+  // Kiểm tra ví hiện tại đã vote trong election này hay chưa.
   useEffect(() => {
     if (!wallet) {
       setHasVoted(false);
@@ -77,7 +82,7 @@ function VotePage({ wallet }) {
     wallet &&
     election &&
     String(election.creator || "").toLowerCase() === wallet.toLowerCase();
-
+  // Creator được bỏ qua bước nhập mã truy cập.
   useEffect(() => {
     if (!election) {
       return;
@@ -94,7 +99,7 @@ function VotePage({ wallet }) {
   const status = election
     ? getElectionStatus(election.start_time, election.end_time, now)
     : null;
-
+  // Xác thực mã truy cập để mở khu vực vote.
   const handleVerify = async () => {
     try {
       await API.post("/votes/verify-code", {
@@ -105,23 +110,34 @@ function VotePage({ wallet }) {
       setVerified(true);
     } catch (error) {
       console.error(error);
-      alert("Sai mã hoặc election không tồn tại!");
+      notify("Sai mã hoặc election không tồn tại.", {
+        type: "error",
+        title: "Xác thực thất bại",
+      });
     }
   };
-
+  // Bỏ phiếu cho ứng viên trên blockchain trước rồi ghi nhận ở backend.
   const handleVote = async (candidate) => {
     if (!wallet) {
-      alert("Vui lòng kết nối MetaMask ở trang chủ trước.");
+      notify("Vui lòng kết nối MetaMask ở trang chủ trước.", {
+        type: "warning",
+        title: "Chưa kết nối ví",
+      });
       return;
     }
-
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      alert("Election này chưa được đồng bộ blockchain.");
+      notify("Election này chưa được đồng bộ blockchain.", {
+        type: "error",
+        title: "Không thể vote",
+      });
       return;
     }
 
     if (!Number.isFinite(Number(candidate.contract_candidate_index))) {
-      alert("Ứng viên này chưa được đồng bộ blockchain.");
+      notify("Ứng viên này chưa được đồng bộ blockchain.", {
+        type: "error",
+        title: "Không thể vote",
+      });
       return;
     }
 
@@ -141,28 +157,43 @@ function VotePage({ wallet }) {
 
       setHasVoted(true);
       await loadCandidates();
-      alert("Vote thành công!");
+      notify("Phiếu bầu của bạn đã được ghi nhận.", {
+        type: "success",
+        title: "Vote thành công",
+      });
     } catch (error) {
       console.error(error);
-      alert("Lỗi vote");
+      notify("Không thể hoàn tất lượt vote này. Vui lòng thử lại.", {
+        type: "error",
+        title: "Vote thất bại",
+      });
     }
 
     setLoading(false);
   };
-
+  // Creator có thể thêm ứng viên ngay trong trang chi tiết election.
   const handleAddCandidate = async () => {
     if (!isOwner) {
-      alert("Chỉ creator mới được thêm ứng viên.");
+      notify("Chỉ creator mới được thêm ứng viên.", {
+        type: "warning",
+        title: "Không có quyền",
+      });
       return;
     }
 
     if (!newCandidate.name.trim()) {
-      alert("Vui lòng nhập tên ứng viên.");
+      notify("Vui lòng nhập tên ứng viên.", {
+        type: "warning",
+        title: "Thiếu thông tin",
+      });
       return;
     }
 
     if (!Number.isFinite(Number(election?.contract_election_id))) {
-      alert("Election này chưa được đồng bộ blockchain.");
+      notify("Election này chưa được đồng bộ blockchain.", {
+        type: "error",
+        title: "Không thể thêm ứng viên",
+      });
       return;
     }
 
@@ -172,11 +203,7 @@ function VotePage({ wallet }) {
       let imageUrl = "";
 
       if (newCandidate.file) {
-        const formData = new FormData();
-        formData.append("image", newCandidate.file);
-
-        const uploadRes = await API.post("/upload", formData);
-        imageUrl = uploadRes.data.url;
+        imageUrl = await uploadImage(newCandidate.file, { requireCloud: true });
       }
 
       const chainRes = await addCandidateOnChain(
@@ -204,18 +231,27 @@ function VotePage({ wallet }) {
         file: null,
       });
       await loadCandidates();
-      alert("Thêm ứng viên thành công!");
+      notify("Ứng viên mới đã được thêm thành công.", {
+        type: "success",
+        title: "Thêm ứng viên thành công",
+      });
     } catch (error) {
       console.error(error);
-      alert("Không thể thêm ứng viên.");
+      notify("Không thể thêm ứng viên vào election này.", {
+        type: "error",
+        title: "Thêm ứng viên thất bại",
+      });
     }
 
     setAddingCandidate(false);
   };
-
+  // Bật/tắt phần lịch sử vote và chỉ tải dữ liệu khi cần hiển thị.
   const handleToggleHistory = async () => {
     if (!isOwner) {
-      alert("Chỉ creator mới được xem lịch sử vote.");
+      notify("Chỉ creator mới được xem lịch sử vote.", {
+        type: "warning",
+        title: "Không có quyền",
+      });
       return;
     }
 
@@ -232,21 +268,28 @@ function VotePage({ wallet }) {
       setShowHistory(true);
     } catch (error) {
       console.error(error);
-      alert("Không tải được lịch sử vote.");
+      notify("Không tải được lịch sử vote.", {
+        type: "error",
+        title: "Tải dữ liệu thất bại",
+      });
     }
   };
-
+  // Tính tổng số phiếu để hiển thị thống kê và phần trăm.
   const totalVotes = candidates.reduce(
     (sum, candidate) => sum + Number(candidate.vote_count || 0),
     0,
   );
+  // Tìm ứng viên đang tạm dẫn đầu dựa trên số phiếu hiện tại.
+  const leadingCandidate = [...candidates].sort(
+    (left, right) => Number(right.vote_count || 0) - Number(left.vote_count || 0),
+  )[0];
 
   return (
     <div className="vote-container">
       <div className="vote-shell">
         <div className="page-top">
           <div>
-            <p className="page-label">Trang election</p>
+            <p className="page-label">Trang chi tiết election</p>
             <h2 className="vote-title">{election?.title || "Bỏ phiếu"}</h2>
           </div>
           <Link to="/" className="back-home">
@@ -321,10 +364,32 @@ function VotePage({ wallet }) {
 
         {verified && (
           <>
+            <div className="results-summary-grid">
+              <div className="result-stat-card">
+                <p className="result-stat-label">Tổng số phiếu</p>
+                <p className="result-stat-value">{totalVotes}</p>
+              </div>
+              <div className="result-stat-card">
+                <p className="result-stat-label">Số ứng viên</p>
+                <p className="result-stat-value">{candidates.length}</p>
+              </div>
+              <div className="result-stat-card result-stat-highlight">
+                <p className="result-stat-label">Đang dẫn đầu</p>
+                <p className="result-stat-value">
+                  {leadingCandidate ? leadingCandidate.name : "Chưa có ứng viên"}
+                </p>
+                <p className="result-stat-note">
+                  {leadingCandidate
+                    ? `${Number(leadingCandidate.vote_count || 0)} phiếu`
+                    : "Chưa có dữ liệu"}
+                </p>
+              </div>
+            </div>
+
             {isOwner ? (
               <div className="owner-tools">
                 <div className="owner-card">
-                  <h3 className="section-title">Quản trị election</h3>
+                  <h3 className="section-title">Khu quản trị của creator</h3>
                   <div className="owner-actions">
                     <button className="owner-btn" onClick={handleAddCandidate} disabled={addingCandidate || status?.isEnded}>
                       {addingCandidate ? "Đang thêm..." : "Thêm ứng viên"}
@@ -376,7 +441,9 @@ function VotePage({ wallet }) {
                       <div className="history-list">
                         {history.map((item) => (
                           <div key={item.id} className="history-item">
-                            <p className="history-voter">{item.voter}</p>
+                            <p className="history-voter">
+                              {formatWalletAddress(item.voter)}
+                            </p>
                             <p className="history-choice">
                               Ứng viên: {item.candidate_name || `ID ${item.candidate_index}`}
                             </p>

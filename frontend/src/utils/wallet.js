@@ -1,4 +1,5 @@
 export function formatWalletAddress(address) {
+  // Rút gọn địa chỉ ví để hiển thị gọn hơn trên giao diện.
   if (!address) {
     return "";
   }

@@ -2,6 +2,7 @@ const API_ORIGIN = "http://localhost:5000";
 
 function buildPlaceholder(label) {
   const text = encodeURIComponent(String(label || "Chưa có ảnh").slice(0, 30));
+  // Tạo ảnh placeholder SVG để dùng khi election hoặc candidate chưa có ảnh.
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
       <defs>
@@ -20,6 +21,7 @@ function buildPlaceholder(label) {
 }
 
 export function resolveImageUrl(image) {
+  // Chuẩn hóa đường dẫn ảnh local hoặc URL tuyệt đối thành URL có thể render được.
   const raw = String(image || "").trim();
 
   if (!raw) {
@@ -39,5 +41,6 @@ export function resolveImageUrl(image) {
 }
 
 export function resolveImageUrlWithFallback(image, label) {
+  // Trả về ảnh thật nếu có, ngược lại dùng placeholder sinh tự động.
   return resolveImageUrl(image) || buildPlaceholder(label);
 }
